@@ -1,0 +1,27 @@
+.error-message {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: rgba(255, 0, 0, 0.1);
+  border: 2px solid #ff0000;
+  padding: 20px;
+  border-radius: 5px;
+  color: #ff0000;
+  font-size: 1.2em;
+  text-align: center;
+  max-width: 80%;
+}
+
+.loading-message {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  border-radius: 5px;
+  color: #000000;
+  font-size: 1.2em;
+  text-align: center;
+}

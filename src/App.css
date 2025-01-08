@@ -1,8 +1,30 @@
 #root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+  min-height: 100vh;
+  display: flex;
+}
+
+.app-container {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.game-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.game-area {
+  flex: 1;
+  overflow: auto;
+}
+
+/* Reset any margins/padding that might affect height */
+.app-container * {
+  margin: 0;
+  box-sizing: border-box;
 }
 
 .logo {
