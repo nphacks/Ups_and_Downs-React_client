@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 import styles from './GameHistory.module.css';
 import DiceRoll from './DiceRoll';
+import gameData from '../data/GameData.json';
 
 interface RollHistoryEntry {
   type: 'roll';
@@ -22,6 +23,8 @@ interface StepLog {
   type: 'step';
   step: number;
   timestamp: string;
+  direction?: 'forward' | 'backward';
+  scenarios?: string[];
 }
 
 type HistoryEntry = RollHistoryEntry | StepLog;
@@ -32,6 +35,17 @@ export function GameHistory({ climb, history, currentStep, onNewRoll }: GameHist
   const [isMoving, setIsMoving] = useState(false);
   // const [rollHistory, setRollHistory] = useState<RollHistoryEntry[]>([]);
 
+  const getRandomScenarios = (stepIndex: number): string[] => {
+    const stepData = gameData[stepIndex];
+    if (!stepData?.scenarios) return [];
+    
+    // Get 2 unique random scenarios
+    const shuffled = [...stepData.scenarios]
+      .sort(() => Math.random() - 0.5)
+      .slice(0, 2);
+    return shuffled;
+  };
+
   const handleDiceRoll = useCallback(async (value: number) => {
     setDiceValue(value);
     setIsMoving(true);
@@ -39,10 +53,13 @@ export function GameHistory({ climb, history, currentStep, onNewRoll }: GameHist
     // Create all step logs first
     const stepLogs: StepLog[] = [];
     for (let i = 0; i < value; i++) {
+      const nextStep = currentStep + i + 1;
+      const scenarios = getRandomScenarios(nextStep);
       const stepLog: StepLog = {
         type: 'step',
-        step: currentStep + i + 1,
-        timestamp: new Date().toLocaleTimeString()
+        step: nextStep,
+        timestamp: new Date().toLocaleTimeString(),
+        scenarios: scenarios
       };
       stepLogs.push(stepLog);
     }
@@ -52,7 +69,7 @@ export function GameHistory({ climb, history, currentStep, onNewRoll }: GameHist
       roll: value,
       step: currentStep,
       timestamp: new Date().toLocaleTimeString(),
-      currentPosition: currentStep,
+      currentPosition: currentStep + value,
       outcome: "Moving forward..."
     };
     // setRollHistory(prev => [...prev, newHistoryEntry]);
@@ -63,6 +80,8 @@ export function GameHistory({ climb, history, currentStep, onNewRoll }: GameHist
     }
     onNewRoll(rollEntry);
     console.log('New roll added:', rollEntry, diceValue, isMoving);
+
+    
     
     // Move player first
     // for (let i = 0; i < value; i++) {
@@ -96,9 +115,10 @@ export function GameHistory({ climb, history, currentStep, onNewRoll }: GameHist
             [...history]
               .reverse()
               .map((entry, index) => (
-                <div key={index} className={
-                  entry.type === 'step' ? styles.stepEntry : styles.historyEntry
-                }>
+                <div key={index} className={`
+                  ${entry.type === 'step' ? styles.stepEntry : styles.historyEntry}
+                  ${entry.type === 'step' && entry.direction === 'backward' ? styles.backward : ''}
+                `}>
                   {entry.type === 'roll' ? (
                     <>
                       <div className={styles.entryHeader}>
@@ -118,12 +138,30 @@ export function GameHistory({ climb, history, currentStep, onNewRoll }: GameHist
                   ) : (
                     <>
                       <div className={styles.entryHeader}>
-                        <span className={styles.stepNumber}>Step Log</span>
+                        <span className={styles.stepNumber}>
+                          {currentStep === entry.step 
+                            ? `You are at step ${entry.step}`
+                            : `At Step ${entry.step}`
+                          }
+                        </span>
                         <span className={styles.rollTime}>{entry.timestamp}</span>
                       </div>
                       <div className={styles.stepDetails}>
-                        <div>Step {entry.step}</div>
-                        <div>Step was traversed.</div>
+                        <div>
+                          {currentStep === entry.step 
+                            ? `You are at step ${entry.step}`
+                            : entry.direction === 'backward'
+                              ? `Moved back to step ${entry.step}`
+                              : `Step ${entry.step} was traversed`
+                          }
+                        </div>
+                        {entry.scenarios && entry.scenarios.length > 0 && (
+                          <div className={styles.scenariosList}>
+                            {entry.scenarios.map((scenario, idx) => (
+                              <div key={idx} className={styles.scenarioItem}>• {scenario}</div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </>
                   )}

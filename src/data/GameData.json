@@ -1,0 +1,193 @@
+[
+    {
+        "scenarios": [
+            "I am John Q.",
+            "I am born to father and mother."
+        ]
+    },
+    {
+        "scenarios": [
+            "I am a happy baby, who began to walk and run very fast.",
+            "I am a cranky baby and don't feel at peace when someone unkown picks me up.",
+            "I am lovable baby who love to be around people. I love to entertain people and smile back at them.",
+            "I am a very curious baby, who is constantly looking around and opening new things to explore for more.",
+            "I am a quick-learner baby. I learn small words and imitate people."
+        ],
+        "questions": [
+            {
+                "type": "decision",  
+                "question": "Should I try walking without holding or with a walker?",
+                "decision": "to walk",
+                "action": "walking",
+                "object": "walker",
+                "answerType": "actionDescription",
+                "answer": [
+                    {
+                        "tookDecision": true,
+                        "decisionStrength": 1,
+                        "tookAction": true,
+                        "actionStrength": 1,
+                        "actionDescription": "without holding",
+                        "withObject": false,
+                        "objectStrength": 1
+                    }, {
+                        "tookDecision": true,
+                        "decisionStrength": 1,
+                        "tookAction": true,
+                        "actionStrength": 1,
+                        "actionDescription": "with a walker",
+                        "withObject": true,
+                        "objectStrength": 1
+                    }, {
+                        "tookDecision": true,
+                        "decisionStrength": 1,
+                        "tookAction": false,
+                        "actionStrength": 1,
+                        "actionDescription": "sit here I am",
+                        "withObject": false,
+                        "objectStrength": 1
+                    }]
+            },
+            {
+                "type": "decision",  
+                "question": "Something green was put in my mouth, do I want to eat it?",
+                "decision": "to eat",
+                "action": "eating something green",
+                "answerType": "actionDescription",
+                "answer": [
+                    {
+                        "tookDecision": true,
+                        "decisionStrength": 1,
+                        "tookAction": true,
+                        "actionStrength": 1,
+                        "actionDescription": "eat it"
+                    }, {
+                        "tookDecision": true,
+                        "decisionStrength": 1,
+                        "tookAction": true,
+                        "actionStrength": 1,
+                        "actionDescription": "spit it out"
+                    }, {
+                        "tookDecision": true,
+                        "decisionStrength": 1,
+                        "tookAction": false,
+                        "actionStrength": 1,
+                        "actionDescription": "cry to not eat"
+                    }]
+            },
+            {
+                "type": "situation",  
+                "question": "I fell down, what do I do?",
+                "situtation": "fell down",
+                "answerType": "action",
+                "answer": [
+                    {
+                        "action": "cry",
+                        "tookAction": true,
+                        "actionStrength": 1
+                        
+                    }, {
+                        "action": "sat and did nothing",
+                        "tookAction": true,
+                        "actionStrength": 1
+                    }, {
+                        "decision": "laughed",
+                        "tookAction": true,
+                        "actionStrength": 1
+                    }]
+            },
+            {
+                "type": "situation",  
+                "question": "I see something shiny, what do I feel?",
+                "situation": "saw something shiny",
+                "answer": [
+                    {
+                        "action": "getting scared",
+                        "tookAction": true,
+                        "actionStrength": 1
+                    }, {
+                        "action": "avoiding it",
+                        "tookAction": true,
+                        "actionStrength": 1
+                    }, {
+                        "decision": "looking for it",
+                        "tookAction": true,
+                        "actionStrength": 1
+                    }]
+            }
+        ]
+    },
+    {
+        "scenarios": [
+            "I learnt to speak small phrases. I can tell people my name. I can tell people what I want to do like \"going out\" and \"wanting a toy\".",
+            "I have developed great motor skills. I can walk, run and climb all around the house.",
+            "I am an imaginative toddler. I sketch my own world in my head.",
+            "I am an obedient toddler. I do not hurt my parents and listen to them diligently.",
+            "I am an independent toddler. I eat, dress and sleep on my own."
+        ],
+        "questions": [
+            {
+                "type": "decision",  
+                "question": "My dad just came home from somewhere, how do I welcome him?",
+                "decision": "to welcome dad at home",
+                "action": "welcoming dad",
+                "answerType": "actionDescription",
+                "answer": [
+                    {
+                        "tookDecision": true,
+                        "decisionStrength": 2,
+                        "actionDescription": "hug him",
+                        "tookAction": true,
+                        "actionStrength": 2
+                    }, {
+                        "decision": "do not care and continue in my own world",
+                        "tookDecision": true,
+                        "decisionStrength": 2,
+                        "tookAction": false,
+                        "actionStrength": 2
+                    }, {
+                        "decision": "hide myself for him to find me",
+                        "tookDecision": true,
+                        "decisionStrength": 2,
+                        "actionDescription": "hide myself",
+                        "tookAction": true,
+                        "actionStrength": 2
+                    }]
+            },
+            {
+                "type": "decision",  
+                "question": "Another toddler wants a toy I am playing with. What do I do?",
+                "decision": "to share toy with another toddler",
+                "action": "sharing toy",
+                "object": "toy",
+                "answerType": "actionDescription",
+                "answer": [
+                    {
+                        "decided": true,
+                        "decisionStrength": 2,
+                        "actionDescription": "sharing it",
+                        "tookAction": true,
+                        "actionStrength": 2
+                    }, {
+                        "decided": true,
+                        "decisionStrength": 2,
+                        "actionDescription": "cry and not give it to them",
+                        "tookAction": true,
+                        "actionStrength": 2
+                    }, {
+                        "decided": true,
+                        "decisionStrength": 2,
+                        "actionDescription": "hiding it",
+                        "tookAction": true,
+                        "actionStrength": 2
+                    }, {
+                        "decided": true,
+                        "decisionStrength": 2,
+                        "actionDescription": "ignoring them",
+                        "tookAction": false,
+                        "actionStrength": 2
+                    }]
+            }
+        ]
+    }
+]

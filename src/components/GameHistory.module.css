@@ -116,6 +116,20 @@
   color: purple;
 }
 
+.stepEntry.backward {
+  border-left: 4px solid darkgreen;
+  background-color: rgba(0, 100, 0, 0.2);
+}
+
+.stepEntry.backward .stepNumber {
+  color: darkgreen;
+}
+
+.stepEntry.backward .stepDetails {
+  background-color: rgba(darkgreen, 0.2);
+  color: darkgreen;
+}
+
 /* Keep your existing styles */
 .historyEntry {
   margin: 8px 0;
@@ -140,4 +154,15 @@
   text-align: center;
   color: #666;
   font-style: italic;
+}
+
+.scenariosList {
+  margin-top: 8px;
+  padding-left: 16px;
+}
+
+.scenarioItem {
+  color: #666;
+  margin: 4px 0;
+  font-size: 0.9em;
 }

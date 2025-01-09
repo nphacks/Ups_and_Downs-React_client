@@ -1,8 +1,11 @@
 import './GamePlay.css';
 // import { DiceRoll } from '../components/DiceRoll';
 import { QuestionPanel } from '../components/QuestionPanel';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { GameHistory } from '../components/GameHistory';
+import gameData from '../data/GameData.json';
+import { GameSession } from '../types/GameTypes';
+
 
 interface GamePlayProps {
   climb: () => void;
@@ -23,6 +26,7 @@ interface RollHistoryEntry {
 interface StepLog {
   type: 'step';
   step: number;
+  scenarios?: string[];
   timestamp: string;
 }
 
@@ -30,13 +34,100 @@ type HistoryEntry = RollHistoryEntry | StepLog;
 
 function GamePlay({ climb, fall, currentStep, gameOver }: GamePlayProps) {
   console.log('Rendering GamePlay with step:', currentStep);
+
+  const [gameSession, setGameSession] = useState<GameSession>(() => {
+    const savedSession = JSON.parse(localStorage.getItem('gameSession') || '{}');
+    return {
+      ...savedSession,
+      steps: savedSession.steps || []
+    };
+  });
+  const [rollHistory, setRollHistory] = useState<HistoryEntry[]>([]);
   const [showQuestion, setShowQuestion] = useState(false);
   const [questionKey, setQuestionKey] = useState(0);
-  
   // const [isMoving, setIsMoving] = useState(false);
   // const [diceValue, setDiceValue] = useState(0);
-  const [rollHistory, setRollHistory] = useState<HistoryEntry[]>([]);
+  // const [rollHistory, setRollHistory] = useState<HistoryEntry[]>([
+  //   {
+  //     type: 'step',
+  //     step: 0,
+  //     scenarios: getRandomScenarios(0),
+  //     timestamp: new Date().toLocaleTimeString()
+  //   }
+  // ]);
   const [showHistory, setShowHistory] = useState(true);
+
+  useEffect(() => {
+    if (rollHistory.length === 0) {
+      const initialScenarios = getRandomScenarios(0);
+      setRollHistory([{
+        type: 'step',
+        step: 0,
+        scenarios: initialScenarios,
+        timestamp: new Date().toLocaleTimeString()
+      }]);
+    }
+  }, []);
+
+  // When scenarios are generated
+  const updateStepScenarios = (stepNumber: number, scenarios: string[]) => {
+    setGameSession(prev => {
+      const newSteps = [...(prev.steps || [])];
+      newSteps[stepNumber] = {
+        ...newSteps[stepNumber],
+        stepNumber,
+        scenarios,
+      };
+      const updatedSession = { ...prev, steps: newSteps };
+      localStorage.setItem('gameSession', JSON.stringify(updatedSession));
+      return updatedSession;
+    });
+  };
+
+  // Pass this to QuestionPanel
+  const updateStepQuestion = (stepNumber: number, questionData: any) => {
+    setGameSession(prev => {
+      const newSteps = [...(prev.steps || [])];
+      if (!newSteps[stepNumber]) {
+        newSteps[stepNumber] = { stepNumber, scenarios: [] };
+      }
+      newSteps[stepNumber].question = {
+        questionData,
+        selectedAnswer: null
+      };
+      const updatedSession = { ...prev, steps: newSteps };
+      localStorage.setItem('gameSession', JSON.stringify(updatedSession));
+      return updatedSession;
+    });
+  };
+
+  // Pass this to QuestionPanel
+  const updateStepAnswer = (stepNumber: number, selectedAnswer: any) => {
+    setGameSession(prev => {
+      const newSteps = [...(prev.steps || [])];
+      if (newSteps[stepNumber]?.question) {
+        newSteps[stepNumber].question!.selectedAnswer = selectedAnswer;
+      }
+      const updatedSession = { ...prev, steps: newSteps };
+      localStorage.setItem('gameSession', JSON.stringify(updatedSession));
+      return updatedSession;
+    });
+  };
+
+  const getRandomScenarios = (stepIndex: number): string[] => {
+    const stepData = gameData[stepIndex];
+    if (!stepData?.scenarios) return [];
+    
+    const shuffled = [...stepData.scenarios]
+      .sort(() => Math.random() - 0.5)
+      .slice(0, 2);
+    
+    updateStepScenarios(stepIndex, shuffled);
+    
+    return shuffled;
+  };
+
+  
   
   // Retrieve history when component mounts
   // useEffect(() => {
@@ -89,11 +180,13 @@ function GamePlay({ climb, fall, currentStep, gameOver }: GamePlayProps) {
   //   // Show question after movement is complete
   //   setQuestionKey(prev => prev + 1);
   //   setShowQuestion(true);
-  // }, [climb]);
+  // }, [climb]);  
 
-  const handleCorrectAnswer = useCallback((playerAnswer: string) => {
+
+  const handleCorrectAnswer = useCallback((playerAnswer: string, fullAnswerObj: any) => {
     setShowQuestion(false);
     setShowHistory(true);
+    updateStepAnswer(currentStep, fullAnswerObj);
     // setDiceValue(0);
     setRollHistory(prev => {
       const lastEntry = prev[prev.length - 1];
@@ -104,19 +197,26 @@ function GamePlay({ climb, fall, currentStep, gameOver }: GamePlayProps) {
     });
   }, []);
 
-  const handleWrongAnswer = useCallback((playerAnswer: string, correctAnswer: string) => {
+  const handleWrongAnswer = useCallback((playerAnswer: string, correctAnswer: string, fullAnswerObj: any) => {
     setShowQuestion(false);
     setShowHistory(true);
+    updateStepAnswer(currentStep, fullAnswerObj);
     setRollHistory(prev => {
       const lastEntry = prev[prev.length - 1];
       return [...prev.slice(0, -1), {
         ...lastEntry,
         outcome: `Answered "${playerAnswer}" - Wrong! The correct answer was "${correctAnswer}". Moving back one step.`
+      },
+      {
+        type: 'step',
+        step: currentStep - 1,
+        timestamp: new Date().toLocaleTimeString(),
+        direction: 'backward' // Optional: add this to your StepLog interface
       }];
     });
     fall();
     // setDiceValue(0);
-  }, [fall]);
+  }, [fall, currentStep]);
 
   const handleNewRoll = (entry: HistoryEntry) => {
     setRollHistory(prev => [...prev, entry]);
@@ -128,7 +228,7 @@ function GamePlay({ climb, fall, currentStep, gameOver }: GamePlayProps) {
       
       setTimeout(() => {
         setShowHistory(false);
-        setQuestionKey(prev => prev + 1);
+        setQuestionKey(prev => prev + 1); // Force new question instance
         setShowQuestion(true);
       }, delayInMs);
     }
@@ -147,54 +247,33 @@ function GamePlay({ climb, fall, currentStep, gameOver }: GamePlayProps) {
 
   return (
     <>
-        <div className="game-container">
-          <div className={`history-panel ${showHistory ? 'open' : 'closed'}`}>
-            <GameHistory 
-              climb={climb}
-              history={rollHistory} 
-              currentStep={currentStep}
-              onNewRoll={handleNewRoll}
-            />
+      <div className="game-container">
+      <div className={`history-panel ${showHistory ? 'open' : 'closed'}`}>
+        <GameHistory 
+          climb={climb}
+          history={rollHistory} 
+          currentStep={currentStep}
+          onNewRoll={handleNewRoll}
+        />
+      </div>
+      <div className="game-content">
+        {gameOver ? (
+          <div className="game-over">
+            <h2>Game Over!</h2>
+            <p>You reached step {currentStep}</p>
           </div>
-          <div className="game-content">
-            {gameOver ? (
-              <div className="game-over">
-                <h2>Game Over!</h2>
-                <p>You reached step {currentStep}</p>
-              </div>
-            ) : showQuestion ? (
-              <QuestionPanel
-                key={questionKey}
-                onCorrectAnswer={(answer) => handleCorrectAnswer(answer)}
-                onWrongAnswer={(playerAnswer, correctAnswer) => handleWrongAnswer(playerAnswer, correctAnswer)}
-              />
-            ) : null}
-          </div>
-            {/* <div className="game-content">
-                {gameOver ? (
-                <div className="game-over">
-                    <h2>Game Over!</h2>
-                    <p>You reached step {currentStep}</p>
-                </div>
-                ) : !showQuestion ? (
-                <DiceRoll onRoll={handleDiceRoll} />
-                <>Dice roll substitute</>
-                ) : (
-                <QuestionPanel
-                    key={questionKey}
-                    onCorrectAnswer={handleCorrectAnswer}
-                    onWrongAnswer={handleWrongAnswer}
-                />
-                <>Question Panel substitute</>
-                )}
-                {diceValue > 0 && (
-                <div className="dice-roll-display">
-                    Last Roll: {diceValue}
-                </div>
-                )}
-            </div> */}
-        </div>
-        <div style={{height: '200px'}}><h1>SHOW QUESTION {showQuestion}</h1></div>
+        ) : showQuestion ? (
+          <QuestionPanel
+            key={questionKey} // This ensures new instance on new roll
+            currentStep={currentStep}
+            gameData={gameData}
+            onCorrectAnswer={handleCorrectAnswer}
+            onWrongAnswer={handleWrongAnswer}
+            onQuestionSet={(questionData) => updateStepQuestion(currentStep, questionData)}
+          />
+        ) : null}
+      </div>
+    </div>
     </>
     
   );
