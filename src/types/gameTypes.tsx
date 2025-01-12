@@ -20,14 +20,14 @@ export interface GameDataContent {
     }[];
 }
 
-interface GameStep {
-  age: number;
-  narrative: string;
-  question?: {
-    questionData: any;
-    selectedAnswer: any;
-  };
-}
+// interface GameStep {
+//   age: number;
+//   narrative: string;
+//   question?: {
+//     questionData: any;
+//     selectedAnswer: any;
+//   };
+// }
 
 export interface GameSession {
   sessionId: string;

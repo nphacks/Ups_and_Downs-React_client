@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useCallback } from 'react';
+import { useRef, useEffect, useCallback } from 'react';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three-stdlib';
 
@@ -28,7 +28,6 @@ const easeInOutQuad = (t: number): number =>
 export function GameRenderer({ 
   onError, 
   onLoadComplete, 
-  onContextLost,
   characterModel,
   currentStep,
   snakeLadderPositions

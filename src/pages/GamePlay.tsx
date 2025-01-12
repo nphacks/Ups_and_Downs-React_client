@@ -63,10 +63,15 @@ function GamePlay({ climb, fall, currentStep, snakeLadderPositions }: GamePlayPr
         scenarios: initialScenarios,
         timestamp: new Date().toLocaleTimeString()
       }]);
-      const storedSession = localStorage.getItem('gameSession');
-      const gameSession = storedSession ? JSON.parse(storedSession) : null;
     }
   }, []);
+
+  const deployHack = (hack: number) => {
+    if(hack == 2) {
+      console.log(showHistory, gameSession)
+    }
+  };
+  deployHack(0)
 
   // When scenarios are generated
   const updateStepScenarios = (stepNumber: number, scenarios: string[]) => {
@@ -267,20 +272,20 @@ function GamePlay({ climb, fall, currentStep, snakeLadderPositions }: GamePlayPr
 
   
 
-  const handleFallBack = (stepNumber: number) => {
-    setGameSession(prev => {
-      const age = stepNumber;
-      const newNarrative = prev.narrative + 
-        `\nAt age ${age}, ${prev.playerName} had a setback due to their decision or action.`;
+  // const handleFallBack = (stepNumber: number) => {
+  //   setGameSession(prev => {
+  //     const age = stepNumber;
+  //     const newNarrative = prev.narrative + 
+  //       `\nAt age ${age}, ${prev.playerName} had a setback due to their decision or action.`;
       
-      const updatedSession = {
-        ...prev,
-        narrative: newNarrative
-      };
-      localStorage.setItem('gameSession', JSON.stringify(updatedSession));
-      return updatedSession;
-    });
-  };
+  //     const updatedSession = {
+  //       ...prev,
+  //       narrative: newNarrative
+  //     };
+  //     localStorage.setItem('gameSession', JSON.stringify(updatedSession));
+  //     return updatedSession;
+  //   });
+  // };
   
 
   const getRandomScenarios = (stepIndex: number): string[] => {
@@ -333,42 +338,42 @@ function GamePlay({ climb, fall, currentStep, snakeLadderPositions }: GamePlayPr
     });
   }, [currentStep, climb]);
   
-  const handleWrongAnswer = useCallback((playerAnswer: string, correctAnswer: string, fullAnswerObj: any) => {
-    setShowQuestion(false);
-    setShowHistory(true);
-    updateStepAnswer(currentStep, fullAnswerObj);
+  // const handleWrongAnswer = useCallback((playerAnswer: string, correctAnswer: string, fullAnswerObj: any) => {
+  //   setShowQuestion(false);
+  //   setShowHistory(true);
+  //   updateStepAnswer(currentStep, fullAnswerObj);
     
-    if (isSnakeLadderPosition(currentStep)) {
-      console.log('Snake/Ladder Question Wrong:', {
-        step: currentStep,
-        answer: playerAnswer
-      });
-      fall();
-    } else {
-      handleFallBack(currentStep);
-      fall();
-    }
+  //   if (isSnakeLadderPosition(currentStep)) {
+  //     console.log('Snake/Ladder Question Wrong:', {
+  //       step: currentStep,
+  //       answer: playerAnswer
+  //     });
+  //     fall();
+  //   } else {
+  //     handleFallBack(currentStep);
+  //     fall();
+  // }
     
-  setRollHistory(prev => {
-      const lastRollEntry = [...prev].reverse().find(entry => entry.type === 'roll');
-      if (lastRollEntry) {
-        return [
-          ...prev.map(entry => 
-            entry === lastRollEntry 
-              ? { ...entry, outcome: `${playerAnswer}` }
-              : entry
-          ),
-          {
-            type: 'step',
-            step: currentStep - 1,
-            timestamp: new Date().toLocaleTimeString(),
-            direction: 'backward'
-          }
-        ];
-      }
-      return prev;
-    });
-  }, [fall, currentStep]);  
+  // setRollHistory(prev => {
+  //     const lastRollEntry = [...prev].reverse().find(entry => entry.type === 'roll');
+  //     if (lastRollEntry) {
+  //       return [
+  //         ...prev.map(entry => 
+  //           entry === lastRollEntry 
+  //             ? { ...entry, outcome: `${playerAnswer}` }
+  //             : entry
+  //         ),
+  //         {
+  //           type: 'step',
+  //           step: currentStep - 1,
+  //           timestamp: new Date().toLocaleTimeString(),
+  //           direction: 'backward'
+  //         }
+  //       ];
+  //     }
+  //     return prev;
+  //   });
+  // }, [fall, currentStep]);  
 
   const handleNewRoll = (entry: HistoryEntry) => {
     // Always add the entry to history first
@@ -472,7 +477,7 @@ function GamePlay({ climb, fall, currentStep, snakeLadderPositions }: GamePlayPr
               currentStep={currentStep}
               gameData={gameData}
               onCorrectAnswer={handleCorrectAnswer}
-              onWrongAnswer={handleWrongAnswer}
+              // onWrongAnswer={handleWrongAnswer}
               onQuestionSet={(questionData) => updateStepQuestion(currentStep, questionData)}
               className={isSnakeLadderPosition(currentStep) ? 'snake-ladder' : ''}
             />

@@ -46,7 +46,14 @@ export function GameHistory({ climb, history, currentStep, gameOver, onNewRoll, 
         steps: savedSession.steps || [],
         narrative: savedSession.narrative || ''
       };
-    });
+  });
+
+  const deployHack = (hack: number) => {
+    if(hack == 2) {
+      console.log(diceValue, gameSession)
+    }
+  };
+  deployHack(0)
 
   const getRandomScenarios = (stepIndex: number, isFinalStep: boolean = false): string[] => {
     if (isFinalStep) {

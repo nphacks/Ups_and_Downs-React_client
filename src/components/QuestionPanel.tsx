@@ -8,7 +8,7 @@ interface QuestionPanelProps {
   currentStep: number;
   gameData: any[];
   onCorrectAnswer: (answer: string, fullAnswerObj: any) => void;
-  onWrongAnswer: (playerAnswer: string, correctAnswer: string, fullAnswerObj: any) => void;
+  // onWrongAnswer: (playerAnswer: string, correctAnswer: string, fullAnswerObj: any) => void;
   onQuestionSet: (questionData: any) => void;
   isSnakeLadder?: boolean;
   className?: string;
@@ -18,7 +18,6 @@ export function QuestionPanel({
   currentStep, 
   gameData, 
   onCorrectAnswer, 
-  onWrongAnswer,
   onQuestionSet,
   className 
 }: QuestionPanelProps) {
