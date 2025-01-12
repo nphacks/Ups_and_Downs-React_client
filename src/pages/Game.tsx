@@ -11,6 +11,7 @@ import '../styles/error.css';
 import { generateSnakeLadderPositions } from '../utils/GameUtils';
 
 function Game() {
+  console.log('Game component rendered');
   const navigate = useNavigate();
 
   const [snakeLadderPositions] = useState<Set<number>>(() => {
@@ -27,6 +28,11 @@ function Game() {
     decrementStep,
     resetGame,
   } = useGameState(100);
+
+  useEffect(() => {
+    console.log('Loading state:', isLoading);
+    console.log('Character model:', characterModel); // Check if model path is correct
+  }, [isLoading]);
 
   // Reset game state when component unmounts
   useEffect(() => {
@@ -97,13 +103,19 @@ function Game() {
     <div className="game-page" style={{ position: 'relative', minHeight: '100vh' }}>
       <div className="game-renderer-container">
         <GameRenderer
-          onError={setError}
-          onLoadComplete={() => setLoading(false)}
-          onContextLost={() => setError('WebGL context lost. Please refresh the page.')}
-          characterModel={characterModel}
-          currentStep={currentStep}
-          snakeLadderPositions={snakeLadderPositions}
-        />
+            onError={(err) => {
+              console.error('GameRenderer error:', err); // Add error logging
+              setError(err);
+            }}
+            onLoadComplete={() => {
+              console.log('GameRenderer load complete'); // Add completion logging
+              setLoading(false);
+            }}
+            onContextLost={() => setError('WebGL context lost. Please refresh the page.')}
+            characterModel={characterModel}
+            currentStep={currentStep}
+            snakeLadderPositions={snakeLadderPositions}
+          />
       </div>
       <GamePlay 
         climb={handleClimb}
