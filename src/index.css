@@ -6,7 +6,7 @@ html, body {
 }
 
 body {
-  background-image: linear-gradient(0deg, #93a5cf 0%, #e4efe9 100%);
+  background-image: linear-gradient(to top, #c1dfc4 0%, #deecdd 100%);
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   min-height: 100vh;
 }

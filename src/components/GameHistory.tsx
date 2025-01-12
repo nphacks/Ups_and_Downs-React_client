@@ -2,6 +2,8 @@ import { useCallback, useState } from 'react';
 import styles from './GameHistory.module.css';
 import DiceRoll from './DiceRoll';
 import gameData from '../data/GameData.json';
+import { GameSession } from '../types/gameTypes';
+import { api } from '../services/api';
 
 interface RollHistoryEntry {
   type: 'roll';
@@ -10,13 +12,17 @@ interface RollHistoryEntry {
   timestamp: string;
   outcome?: string;
   currentPosition?: number;
+  question?: string;
 }
 
 interface GameHistoryProps {
   climb: () => void;
   history: HistoryEntry[]; 
   currentStep: number;
+  gameOver: boolean;
   onNewRoll: (entry: HistoryEntry) => void;
+  onUpdateNarrative: (step: number, scenarios: string[]) => void;
+  setGameOver: (value: boolean) => void;
 }
 
 interface StepLog {
@@ -29,38 +35,100 @@ interface StepLog {
 
 type HistoryEntry = RollHistoryEntry | StepLog;
 
-export function GameHistory({ climb, history, currentStep, onNewRoll }: GameHistoryProps) {
-  console.log('Rendering history component with:', history);
+export function GameHistory({ climb, history, currentStep, gameOver, onNewRoll, onUpdateNarrative, setGameOver }: GameHistoryProps) {
+  // console.log('Rendering history component with:', history);
   const [diceValue, setDiceValue] = useState(0);
   const [isMoving, setIsMoving] = useState(false);
-  // const [rollHistory, setRollHistory] = useState<RollHistoryEntry[]>([]);
+  const [gameSession, setGameSession] = useState<GameSession>(() => {
+      const savedSession = JSON.parse(localStorage.getItem('gameSession') || '{}');
+      return {
+        ...savedSession,
+        steps: savedSession.steps || [],
+        narrative: savedSession.narrative || ''
+      };
+    });
 
-  const getRandomScenarios = (stepIndex: number): string[] => {
+  const getRandomScenarios = (stepIndex: number, isFinalStep: boolean = false): string[] => {
+    if (isFinalStep) {
+      return [];
+    }
     const stepData = gameData[stepIndex];
     if (!stepData?.scenarios) return [];
     
-    // Get 2 unique random scenarios
+    // Get 1 unique random scenarios
     const shuffled = [...stepData.scenarios]
       .sort(() => Math.random() - 0.5)
-      .slice(0, 2);
+      .slice(0, 1);
+    
+      const stepNumber = stepIndex
+      const scenarios = shuffled
+      setGameSession(prev => {
+        const newSteps = [...(prev.steps || [])];
+        const age = stepIndex
+        newSteps[stepIndex] = {
+          ...newSteps[stepIndex],
+          stepNumber,
+          age,
+          scenarios
+        };
+        const newNarrative = prev.narrative + 
+        `\nAt age ${age}, ${scenarios.join(' ')}`;
+      
+        const updatedSession = { 
+          ...prev, 
+          steps: newSteps,
+          narrative: newNarrative
+        };
+        try {
+          const storedSession = localStorage.getItem('gameSession');
+          const gameSession = storedSession ? JSON.parse(storedSession) : null;
+          api.addEventAtAge({
+            gameSessionId: gameSession.sessionId, 
+            playerId: gameSession.playerId, 
+            age: stepNumber, 
+            eventDescription: scenarios.join(' ') 
+          });
+        } catch(error) {
+          console.error('Failed to add event:', error);
+        }
+        localStorage.setItem('gameSession', JSON.stringify(updatedSession));
+        return updatedSession;
+      });
     return shuffled;
   };
 
   const handleDiceRoll = useCallback(async (value: number) => {
+    const potentialPosition = currentStep + value;
+    
+    // If we're near 100, handle special cases
+    if (currentStep > 94) {
+      if (potentialPosition > 100) {
+        // Invalid move - let player roll again
+        return;
+      }
+    }
+
     setDiceValue(value);
     setIsMoving(true);
 
-    // Create all step logs first
+    // Then create and process step logs
     const stepLogs: StepLog[] = [];
     for (let i = 0; i < value; i++) {
       const nextStep = currentStep + i + 1;
-      const scenarios = getRandomScenarios(nextStep);
+      const isLastStep = i === value - 1;
+      const scenarios = getRandomScenarios(nextStep, isLastStep);
+      
+      if (scenarios.length > 0) {
+        onUpdateNarrative(nextStep, scenarios);
+      }
+
       const stepLog: StepLog = {
         type: 'step',
         step: nextStep,
         timestamp: new Date().toLocaleTimeString(),
         scenarios: scenarios
       };
+      
       stepLogs.push(stepLog);
     }
 
@@ -72,39 +140,27 @@ export function GameHistory({ climb, history, currentStep, onNewRoll }: GameHist
       currentPosition: currentStep + value,
       outcome: "Moving forward..."
     };
-    // setRollHistory(prev => [...prev, newHistoryEntry]);
+    // console.log('Creating roll entry:', rollEntry);
+
+    // Process steps after roll entry is added
     for (const stepLog of stepLogs) {
       onNewRoll(stepLog);
       await new Promise(resolve => setTimeout(resolve, 800));
       climb();
     }
-    onNewRoll(rollEntry);
-    console.log('New roll added:', rollEntry, diceValue, isMoving);
+    onNewRoll(rollEntry); 
 
-    
-    
-    // Move player first
-    // for (let i = 0; i < value; i++) {
-    //   const stepLog: StepLog = {
-    //     type: 'step',
-    //     step: currentStep + i + 1,
-    //     timestamp: new Date().toLocaleTimeString()
-    //   };
-    //   onNewRoll(stepLog);
-    //   await new Promise(resolve => setTimeout(resolve, 800));
-    //   climb();
-    // }
+    if (potentialPosition === 100) {
+      setGameOver(true); 
+    }
     
     setIsMoving(false);
-    // Show question after movement is complete
-    // setQuestionKey(prev => prev + 1);
-    // setShowQuestion(true);
-  }, [climb, currentStep, onNewRoll]);
+  }, [climb, currentStep, onNewRoll, onUpdateNarrative]);
 
   return (
     <div className={styles.gameInformationPanel}>
       <div className={styles.diceRoll}>
-        <DiceRoll onRoll={handleDiceRoll} />
+      <DiceRoll onRoll={handleDiceRoll} disabled={gameOver || isMoving} />
       </div>
       <div className={styles.historyPanel}>
         <h3 className={styles.historyTitle}>Game History</h3>
@@ -123,15 +179,20 @@ export function GameHistory({ climb, history, currentStep, onNewRoll }: GameHist
                     <>
                       <div className={styles.entryHeader}>
                         <span className={styles.rollNumber}>
-                        Roll #{history.filter(h => h.type === 'roll').length - 
-                          history.filter(h => h.type === 'roll').reverse().findIndex(h => h === entry)}
+                          Rolled a {entry.roll}
                         </span>
                         <span className={styles.rollTime}>{entry.timestamp}</span>
                       </div>
                       <div className={styles.rollDetails}>
-                        Rolled a {entry.roll} at step {entry.step}
+                        {entry.question && (
+                          <div className={styles.questionText}>
+                            <b>Question: </b>{entry.question}
+                          </div>
+                        )}
                         {entry.outcome && (
-                          <div className={styles.rollOutcome}>{entry.outcome}</div>
+                          <div className={styles.rollOutcome}>
+                            <b>Response: </b>{entry.outcome}
+                          </div>
                         )}
                       </div>
                     </>
@@ -141,7 +202,7 @@ export function GameHistory({ climb, history, currentStep, onNewRoll }: GameHist
                         <span className={styles.stepNumber}>
                           {currentStep === entry.step 
                             ? `You are at step ${entry.step}`
-                            : `At Step ${entry.step}`
+                            : `Traversed Step ${entry.step}`
                           }
                         </span>
                         <span className={styles.rollTime}>{entry.timestamp}</span>
@@ -149,16 +210,16 @@ export function GameHistory({ climb, history, currentStep, onNewRoll }: GameHist
                       <div className={styles.stepDetails}>
                         <div>
                           {currentStep === entry.step 
-                            ? `You are at step ${entry.step}`
+                            ? ``
                             : entry.direction === 'backward'
                               ? `Moved back to step ${entry.step}`
-                              : `Step ${entry.step} was traversed`
+                              : ``
                           }
                         </div>
                         {entry.scenarios && entry.scenarios.length > 0 && (
                           <div className={styles.scenariosList}>
                             {entry.scenarios.map((scenario, idx) => (
-                              <div key={idx} className={styles.scenarioItem}>• {scenario}</div>
+                              <div key={idx} className={styles.scenarioItem}>{scenario}</div>
                             ))}
                           </div>
                         )}
@@ -175,3 +236,4 @@ export function GameHistory({ climb, history, currentStep, onNewRoll }: GameHist
 }
 
 export default GameHistory;
+

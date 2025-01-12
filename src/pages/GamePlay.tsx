@@ -4,14 +4,16 @@ import { QuestionPanel } from '../components/QuestionPanel';
 import { useState, useCallback, useEffect } from 'react';
 import { GameHistory } from '../components/GameHistory';
 import gameData from '../data/GameData.json';
-import { GameSession } from '../types/GameTypes';
-
+import { GameSession } from '../types/gameTypes';
+import { api } from '../services/api';
+import { useNavigate } from 'react-router-dom';
+import loadingVideo from '../assets/loading.mp4';
 
 interface GamePlayProps {
   climb: () => void;
   fall: () => void;
   currentStep: number;
-  gameOver: boolean;
+  snakeLadderPositions: Set<number>;
 }
 
 interface RollHistoryEntry {
@@ -21,6 +23,7 @@ interface RollHistoryEntry {
   timestamp: string;
   outcome?: string;
   currentPosition?: number;
+  question?: string;
 }
 
 interface StepLog {
@@ -32,30 +35,24 @@ interface StepLog {
 
 type HistoryEntry = RollHistoryEntry | StepLog;
 
-function GamePlay({ climb, fall, currentStep, gameOver }: GamePlayProps) {
-  console.log('Rendering GamePlay with step:', currentStep);
+function GamePlay({ climb, fall, currentStep, snakeLadderPositions }: GamePlayProps) {
+  // console.log('Rendering GamePlay with step:', currentStep);
 
   const [gameSession, setGameSession] = useState<GameSession>(() => {
     const savedSession = JSON.parse(localStorage.getItem('gameSession') || '{}');
     return {
       ...savedSession,
-      steps: savedSession.steps || []
+      steps: savedSession.steps || [],
+      narrative: savedSession.narrative || ''
     };
   });
   const [rollHistory, setRollHistory] = useState<HistoryEntry[]>([]);
   const [showQuestion, setShowQuestion] = useState(false);
   const [questionKey, setQuestionKey] = useState(0);
-  // const [isMoving, setIsMoving] = useState(false);
-  // const [diceValue, setDiceValue] = useState(0);
-  // const [rollHistory, setRollHistory] = useState<HistoryEntry[]>([
-  //   {
-  //     type: 'step',
-  //     step: 0,
-  //     scenarios: getRandomScenarios(0),
-  //     timestamp: new Date().toLocaleTimeString()
-  //   }
-  // ]);
+  const [gameOver, setGameOver] = useState(false);
   const [showHistory, setShowHistory] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (rollHistory.length === 0) {
@@ -66,55 +63,228 @@ function GamePlay({ climb, fall, currentStep, gameOver }: GamePlayProps) {
         scenarios: initialScenarios,
         timestamp: new Date().toLocaleTimeString()
       }]);
+      const storedSession = localStorage.getItem('gameSession');
+      const gameSession = storedSession ? JSON.parse(storedSession) : null;
     }
   }, []);
 
   // When scenarios are generated
   const updateStepScenarios = (stepNumber: number, scenarios: string[]) => {
+
+      setGameSession(prev => {
+        const newSteps = [...(prev.steps || [])];
+        const age = stepNumber
+        newSteps[stepNumber] = {
+          ...newSteps[stepNumber],
+          stepNumber,
+          age,
+          scenarios
+        };
+        const newNarrative = prev.narrative + 
+        `\nAt age ${age}, ${scenarios.join(' ')}`;
+      
+        const updatedSession = { 
+          ...prev, 
+          steps: newSteps,
+          narrative: newNarrative
+        };
+        localStorage.setItem('gameSession', JSON.stringify(updatedSession));
+        return updatedSession;
+      });
+    
+    
+  };
+
+  const updateNarrativeWithScenarios = (step: number, scenarios: string[]) => {
     setGameSession(prev => {
-      const newSteps = [...(prev.steps || [])];
-      newSteps[stepNumber] = {
-        ...newSteps[stepNumber],
-        stepNumber,
-        scenarios,
+      const age = step;
+      const newNarrative = scenarios.length > 0 
+        ? `${prev.narrative}\nAt age ${age}, ${scenarios.join('. ')}`
+        : prev.narrative;
+  
+      const updatedSession = {
+        ...prev,
+        narrative: newNarrative
       };
-      const updatedSession = { ...prev, steps: newSteps };
       localStorage.setItem('gameSession', JSON.stringify(updatedSession));
       return updatedSession;
     });
   };
+  
 
   // Pass this to QuestionPanel
   const updateStepQuestion = (stepNumber: number, questionData: any) => {
     setGameSession(prev => {
       const newSteps = [...(prev.steps || [])];
+      const age = stepNumber
       if (!newSteps[stepNumber]) {
-        newSteps[stepNumber] = { stepNumber, scenarios: [] };
+        newSteps[stepNumber] = {
+          stepNumber,
+          age,
+          scenarios: [],
+          question: {
+            questionData,
+            selectedAnswer: null
+          }
+        };
+      } else {
+        newSteps[stepNumber] = {
+          ...newSteps[stepNumber],
+          question: {
+            questionData,
+            selectedAnswer: null
+          }
+        };
       }
-      newSteps[stepNumber].question = {
-        questionData,
-        selectedAnswer: null
-      };
       const updatedSession = { ...prev, steps: newSteps };
       localStorage.setItem('gameSession', JSON.stringify(updatedSession));
       return updatedSession;
+    });
+
+    setRollHistory(prev => {
+      const lastEntry = prev[prev.length - 1];
+      if (lastEntry && lastEntry.type === 'roll') {
+        return prev.map((entry, index) => 
+          index === prev.length - 1 
+            ? { ...entry, question: questionData.question }
+            : entry
+        );
+      }
+      return prev;
     });
   };
 
   // Pass this to QuestionPanel
-  const updateStepAnswer = (stepNumber: number, selectedAnswer: any) => {
+  const updateStepAnswer = async (stepNumber: number, selectedAnswer: any) => {
+    try {
+      setGameSession(prev => {
+        const newSteps = [...(prev.steps || [])];
+        const age = stepNumber;
+
+        if (newSteps[stepNumber]?.question) {
+          const questionData = newSteps[stepNumber].question!.questionData;
+          
+          // Make the appropriate API call based on question type
+          switch (questionData.type) {
+              case 'skill':
+                  api.addSkillAtAge({
+                      gameSessionId: prev.sessionId,
+                      playerId: prev.playerId,
+                      age: age,
+                      skill: selectedAnswer.skill, 
+                      acquired: false
+                  });
+                  break;
+
+              case 'action':
+                  api.addActionAtAge({
+                    gameSessionId: prev.sessionId,
+                    playerId: prev.playerId,
+                    age: age,
+                    actionQuestion: questionData.question,
+                    actionDescription: selectedAnswer.action_description,
+                    tookAction: selectedAnswer.took_action || true,
+                    usedAnythingForAction: selectedAnswer.used_anything || '',
+                    skill: selectedAnswer.skill || '',
+                    skillUsed: selectedAnswer.skill_used || false,
+                    object: selectedAnswer.object || '',
+                    objectUsed: selectedAnswer.object_used || false
+                  });
+                  break;
+
+              case 'decision':
+                  api.addDecisionAtAge({
+                    gameSessionId: prev.sessionId,
+                    playerId: prev.playerId,
+                    age: age,
+                    decisionQuestion: questionData.question,
+                    decisionDescription: selectedAnswer.decision_description,
+                    decisionMade: selectedAnswer.decision_made || true,
+                    leadsTo: selectedAnswer.leads_to || '',
+                    actionDescription: selectedAnswer.action_description || '',
+                    tookAction: selectedAnswer.took_action || false,
+                    skill: selectedAnswer.skill || '',
+                    skillUsed: selectedAnswer.skill_used || false,
+                    object: selectedAnswer.object || '',
+                    objectUsed: selectedAnswer.object_used || false
+                  });
+                  break;
+
+              case 'situation':
+                  api.addSituationAtAge({
+                    gameSessionId: prev.sessionId,
+                    playerId: prev.playerId,
+                    age: age,
+                    situationQuestion: questionData.question,
+                    situationDescription: selectedAnswer.situation_description || '',
+                    leadsTo: selectedAnswer.leads_to || '',
+                    decisionDescription: selectedAnswer.decision_description || '',
+                    decisionMade: selectedAnswer.decision_made || true,
+                    actionDescription: selectedAnswer.action_description || '',
+                    tookAction: selectedAnswer.took_action || true,
+                    usedAnythingForAction: selectedAnswer.used_anything || '',
+                    skill: selectedAnswer.skill || '',
+                    skillUsed: selectedAnswer.skill_used || true,
+                    object: selectedAnswer.object || '',
+                    objectUsed: selectedAnswer.object_used || true
+                  });
+                  break;
+          }
+
+          // Rest of your existing code
+          newSteps[stepNumber] = {
+              ...newSteps[stepNumber],
+              question: {
+                  ...newSteps[stepNumber].question!,
+                  selectedAnswer
+              }
+          };
+
+          let newNarrative;
+          if (isSnakeLadderPosition(stepNumber)) {
+              newNarrative = prev.narrative +
+                  `\nAt age ${age}, ${prev.playerName} faced a critical decision "${questionData.question}", and chose "${selectedAnswer.skill || selectedAnswer.decision_description || selectedAnswer.action_description}"`;
+          } else {
+              newNarrative = prev.narrative +
+                  `\nAt age ${age}, ${prev.playerName} faced the question "${questionData.question}", and answered "${selectedAnswer.skill || selectedAnswer.decision_description || selectedAnswer.action_description}"`;
+          }
+
+          const updatedSession = {
+              ...prev,
+              steps: newSteps,
+              narrative: newNarrative
+          };
+          localStorage.setItem('gameSession', JSON.stringify(updatedSession));
+          return updatedSession;
+        }
+        return prev;
+      });
+    } catch (error) {
+        console.error('Error updating step answer:', error);
+        // Handle error appropriately
+    }
+  };
+
+  
+
+  const handleFallBack = (stepNumber: number) => {
     setGameSession(prev => {
-      const newSteps = [...(prev.steps || [])];
-      if (newSteps[stepNumber]?.question) {
-        newSteps[stepNumber].question!.selectedAnswer = selectedAnswer;
-      }
-      const updatedSession = { ...prev, steps: newSteps };
+      const age = stepNumber;
+      const newNarrative = prev.narrative + 
+        `\nAt age ${age}, ${prev.playerName} had a setback due to their decision or action.`;
+      
+      const updatedSession = {
+        ...prev,
+        narrative: newNarrative
+      };
       localStorage.setItem('gameSession', JSON.stringify(updatedSession));
       return updatedSession;
     });
   };
+  
 
   const getRandomScenarios = (stepIndex: number): string[] => {
+    console.log('Random Scenarios being genrated')
     const stepData = gameData[stepIndex];
     if (!stepData?.scenarios) return [];
     
@@ -127,152 +297,187 @@ function GamePlay({ climb, fall, currentStep, gameOver }: GamePlayProps) {
     return shuffled;
   };
 
-  
-  
-  // Retrieve history when component mounts
-  // useEffect(() => {
-  //   const savedHistory = localStorage.getItem('rollHistory');
-  //   console.log('Loading saved history:', savedHistory);
-  //   if (savedHistory) {
-  //     try {
-  //       const parsed = JSON.parse(savedHistory);
-  //       console.log('Parsed history:', parsed);
-  //       // setRollHistory(parsed);
-  //     } catch (e) {
-  //       console.error('Error loading history:', e);
-  //       // setRollHistory([]);
-  //     }
-  //   }
-  // }, []);
-  
-  // Save history when it changes
-  // useEffect(() => {
-  //   if (rollHistory.length > 0) {
-  //     const historyString = JSON.stringify(rollHistory);
-  //     localStorage.setItem('rollHistory', historyString);
-  //     console.log('Saved history:', rollHistory);
-  //   }
-  //   console.log('Current history state:', rollHistory);
-  // }, [rollHistory]);
-
-  
-
-  // const handleDiceRoll = useCallback(async (value: number) => {
-  //   setDiceValue(value);
-  //   setIsMoving(true);
-  //   const newHistoryEntry = {
-  //     roll: value,
-  //     step: currentStep,
-  //     timestamp: new Date().toLocaleTimeString(),
-  //     currentPosition: currentStep,
-  //     outcome: "Moving forward..."
-  //   };
-  //   setRollHistory(prev => [...prev, newHistoryEntry]);
-  //   console.log('New roll added:', newHistoryEntry);
-    
-  //   // Move player first
-  //   for (let i = 0; i < value; i++) {
-  //     await new Promise(resolve => setTimeout(resolve, 800)); // Animation delay
-  //     climb();
-  //   }
-    
-  //   setIsMoving(false);
-  //   // Show question after movement is complete
-  //   setQuestionKey(prev => prev + 1);
-  //   setShowQuestion(true);
-  // }, [climb]);  
-
-
   const handleCorrectAnswer = useCallback((playerAnswer: string, fullAnswerObj: any) => {
     setShowQuestion(false);
     setShowHistory(true);
     updateStepAnswer(currentStep, fullAnswerObj);
-    // setDiceValue(0);
+    
+    if (isSnakeLadderPosition(currentStep)) {
+      console.log('Snake/Ladder Question Correct:', {
+        step: currentStep,
+        answer: playerAnswer
+      });
+      if (fullAnswerObj.decision === 'good') {
+        climb();
+        climb();
+        climb();
+        climb();
+      } else {
+        fall();
+        fall();
+      }
+    }
+  
     setRollHistory(prev => {
-      const lastEntry = prev[prev.length - 1];
-      return [...prev.slice(0, -1), {
-        ...lastEntry,
-        outcome: `Answered "${playerAnswer}" - Correct! Staying at current position.`
-      }];
+      // console.log('Previous history:', prev);
+      const lastRollEntry = [...prev].reverse().find(entry => entry.type === 'roll');
+      // console.log('Found last roll entry:', lastRollEntry);
+      if (lastRollEntry) {
+        return prev.map(entry => 
+          entry === lastRollEntry 
+            ? { ...entry, outcome: `${playerAnswer}` }
+            : entry
+        );
+      }
+      return prev;
     });
-  }, []);
-
+  }, [currentStep, climb]);
+  
   const handleWrongAnswer = useCallback((playerAnswer: string, correctAnswer: string, fullAnswerObj: any) => {
     setShowQuestion(false);
     setShowHistory(true);
     updateStepAnswer(currentStep, fullAnswerObj);
-    setRollHistory(prev => {
-      const lastEntry = prev[prev.length - 1];
-      return [...prev.slice(0, -1), {
-        ...lastEntry,
-        outcome: `Answered "${playerAnswer}" - Wrong! The correct answer was "${correctAnswer}". Moving back one step.`
-      },
-      {
-        type: 'step',
-        step: currentStep - 1,
-        timestamp: new Date().toLocaleTimeString(),
-        direction: 'backward' // Optional: add this to your StepLog interface
-      }];
+    
+    if (isSnakeLadderPosition(currentStep)) {
+      console.log('Snake/Ladder Question Wrong:', {
+        step: currentStep,
+        answer: playerAnswer
+      });
+      fall();
+    } else {
+      handleFallBack(currentStep);
+      fall();
+    }
+    
+  setRollHistory(prev => {
+      const lastRollEntry = [...prev].reverse().find(entry => entry.type === 'roll');
+      if (lastRollEntry) {
+        return [
+          ...prev.map(entry => 
+            entry === lastRollEntry 
+              ? { ...entry, outcome: `${playerAnswer}` }
+              : entry
+          ),
+          {
+            type: 'step',
+            step: currentStep - 1,
+            timestamp: new Date().toLocaleTimeString(),
+            direction: 'backward'
+          }
+        ];
+      }
+      return prev;
     });
-    fall();
-    // setDiceValue(0);
-  }, [fall, currentStep]);
+  }, [fall, currentStep]);  
 
   const handleNewRoll = (entry: HistoryEntry) => {
+    // Always add the entry to history first
     setRollHistory(prev => [...prev, entry]);
-    
-    // Wait for 800ms per step (matching your climb animation delay) 
-    // Plus a small extra delay (200ms) to ensure movement is complete
-    if (entry.type === 'roll') {
-      const delayInMs = (entry.roll * 800) + 400;
+
+    // Then handle the timing for questions if it's a roll
+    if (entry.type === 'roll' && entry.currentPosition !== undefined) {  
+      // const delayInMs = (entry.roll * 800) + 100;
       
-      setTimeout(() => {
-        setShowHistory(false);
-        setQuestionKey(prev => prev + 1); // Force new question instance
-        setShowQuestion(true);
-      }, delayInMs);
+      // setTimeout(() => {
+      //   setShowHistory(false);
+      //   setQuestionKey(prev => prev + 1);
+      //   setShowQuestion(true);
+      // }, delayInMs);
+      setShowHistory(false);
+      setQuestionKey(prev => prev + 1);
+      setShowQuestion(true);
     }
   };
 
-  // Reset history when game is over
-  // useEffect(() => {
-  //   if (gameOver) {
-  //     setTimeout(() => {
-  //       localStorage.removeItem('rollHistory');
-  //       setRollHistory([]);
-  //     }, 2000);
-  //   }
-  // }, [gameOver]);
+  const isSnakeLadderPosition = useCallback((step: number): boolean => {
+    return snakeLadderPositions.has(step);
+  }, [snakeLadderPositions]);
+  
+  const handleAnalyzeGame = async () => {
+    console.log('Starting Analyze')
+    setIsLoading(true);
+    try {
+      const storedSession = localStorage.getItem('gameSession');
+      const gameSession = storedSession ? JSON.parse(storedSession) : null;
+      
+      const response = await api.fetchFetchGameSession({
+        sessionId: gameSession.sessionId,
+        maxAge: 100
+      });
+      
+      // Navigate to analyze page with the response data
+      navigate('/analysis', { state: { analysisData: response } });
+    } catch (error) {
+      console.error('Error analyzing game:', error);
+      // Handle error appropriately
+    } finally {
+      setIsLoading(false);
+    }
+  }
 
+  const LoadingOverlay = () => (
+    <div className="loading-overlay">
+      <video
+        autoPlay
+        loop
+        muted
+        className="loading-video"
+      >
+        <source src={loadingVideo} type="video/mp4" />
+        Your browser does not support the video tag.
+      </video>
+    </div>
+  );
+
+  const handleNewGame = async () => {
+    navigate('/');
+  }
 
   return (
     <>
+      {isLoading && <LoadingOverlay />}
       <div className="game-container">
-      <div className={`history-panel ${showHistory ? 'open' : 'closed'}`}>
-        <GameHistory 
-          climb={climb}
-          history={rollHistory} 
-          currentStep={currentStep}
-          onNewRoll={handleNewRoll}
-        />
-      </div>
-      <div className="game-content">
-        {gameOver ? (
-          <div className="game-over">
-            <h2>Game Over!</h2>
-            <p>You reached step {currentStep}</p>
-          </div>
-        ) : showQuestion ? (
-          <QuestionPanel
-            key={questionKey} // This ensures new instance on new roll
+        <div>
+          <GameHistory 
+            climb={climb}
+            history={rollHistory} 
             currentStep={currentStep}
-            gameData={gameData}
-            onCorrectAnswer={handleCorrectAnswer}
-            onWrongAnswer={handleWrongAnswer}
-            onQuestionSet={(questionData) => updateStepQuestion(currentStep, questionData)}
+            onNewRoll={handleNewRoll}
+            onUpdateNarrative={updateNarrativeWithScenarios}
+            gameOver={gameOver}
+            setGameOver={setGameOver}
           />
-        ) : null}
-      </div>
+          {gameOver && (
+            <div className="game-over-overlay">
+              <div className="game-over-modal">
+                <h2>Woohoo! Congratulations!</h2>
+                <p>You lived a long life till 100!</p>
+                <div className="game-over-buttons">
+                  <button onClick={handleAnalyzeGame}>Analyze my life lived</button>
+                  <button onClick={handleNewGame}>Live a new Life</button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+        <div className="game-content">
+          {gameOver ? (
+            <div className="game-over">
+              <h2>Game Over!</h2>
+              <p>You reached step {currentStep}</p>
+            </div>
+          ) : showQuestion ? (
+            <QuestionPanel
+              key={questionKey}
+              currentStep={currentStep}
+              gameData={gameData}
+              onCorrectAnswer={handleCorrectAnswer}
+              onWrongAnswer={handleWrongAnswer}
+              onQuestionSet={(questionData) => updateStepQuestion(currentStep, questionData)}
+              className={isSnakeLadderPosition(currentStep) ? 'snake-ladder' : ''}
+            />
+          ) : null}
+        </div>
     </div>
     </>
     

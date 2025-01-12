@@ -13,6 +13,7 @@ interface GameRendererProps {
   onContextLost: () => void;
   characterModel: string;
   currentStep: number;
+  snakeLadderPositions: Set<number>; 
 }
 
 type EdgeMaterial = THREE.LineBasicMaterial & {
@@ -29,7 +30,8 @@ export function GameRenderer({
   onLoadComplete, 
   onContextLost,
   characterModel,
-  currentStep 
+  currentStep,
+  snakeLadderPositions
 }: GameRendererProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
@@ -177,6 +179,13 @@ export function GameRenderer({
     // Create shared resources
     geometryRef.current = new THREE.BoxGeometry(2, 0.2, 2);
     materialRef.current = new THREE.MeshPhongMaterial({ color: 0x215412 });
+    // Add a special material for snake/ladder steps
+    const snakeLadderMaterial = new THREE.MeshPhongMaterial({ 
+      color: 0xFFD700,  // Gold color
+      opacity: 0.8,
+      transparent: true
+    });
+
     edgeGeometryRef.current = new THREE.EdgesGeometry(geometryRef.current);
     edgeMaterialRef.current = new THREE.LineBasicMaterial({
       color: 0xff0000,
@@ -189,8 +198,16 @@ export function GameRenderer({
     for (let i = 0; i < 100; i++) {
       if (!geometryRef.current || !materialRef.current || !edgeGeometryRef.current || !edgeMaterialRef.current) continue;
       
-      const step = new THREE.Mesh(geometryRef.current, materialRef.current);
-      const edgeMesh = new THREE.LineSegments(edgeGeometryRef.current, edgeMaterialRef.current);
+      const step = new THREE.Mesh(
+        geometryRef.current, 
+        snakeLadderPositions.has(i + 1) ? snakeLadderMaterial : materialRef.current
+      );
+      const edgeMesh = new THREE.LineSegments(
+        edgeGeometryRef.current, 
+        snakeLadderPositions.has(i + 1) 
+          ? new THREE.LineBasicMaterial({ color: 0xFFD700 }) 
+          : edgeMaterialRef.current
+      );
       
       edgeMesh.scale.set(1.01, 1.01, 1.06);
       step.position.set(0, i * 0.2, -i * 0.5);
@@ -200,7 +217,7 @@ export function GameRenderer({
       scene.add(edgeMesh);
       steps.current.push({ stepMesh: step, edgeMesh });
     }
-  }, []);
+  }, [snakeLadderPositions]);
 
   const loadCharacterModel = useCallback(() => {
     if (!sceneRef.current) return;

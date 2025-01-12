@@ -66,3 +66,48 @@
 .game-content * {
   pointer-events: auto;
 }
+
+.game-over-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999; /* Increased z-index */
+  pointer-events: all; /* Ensure it captures clicks */
+}
+
+.game-over-modal {
+  background-color: white;
+  padding: 20px;
+  border-radius: 8px;
+  z-index: 10000; /* Higher than overlay */
+  position: relative;
+  pointer-events: all;
+}
+
+.game-over-buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+  position: relative;
+  z-index: 10001; /* Even higher */
+}
+
+.game-over-buttons button {
+  padding: 10px 20px;
+  cursor: pointer;
+  position: relative;
+  z-index: 10002; /* Highest */
+  pointer-events: all;
+}
+
+/* If there's a canvas element, force it to a lower z-index */
+canvas {
+  z-index: 1;
+  pointer-events: none; /* This will make the canvas ignore mouse events */
+}

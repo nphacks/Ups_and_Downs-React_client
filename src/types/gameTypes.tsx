@@ -20,17 +20,26 @@ export interface GameDataContent {
     }[];
 }
 
+interface GameStep {
+  age: number;
+  narrative: string;
+  question?: {
+    questionData: any;
+    selectedAnswer: any;
+  };
+}
+
 export interface GameSession {
   sessionId: string;
   playerId: string;
   playerName: string;
-  fatherName: string;
-  motherName: string;
   steps: StepData[];
+  narrative: string; 
 }
 
 export interface StepData {
   stepNumber: number;
+  age: number;  // Add this
   scenarios: string[];
   question?: {
     questionData: any; // Reference the question type from existing interface

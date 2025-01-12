@@ -1,6 +1,6 @@
 .gameInformationPanel {
   flex: 0 0 350px;
-  width: 300px;
+  width: 25vw;
   min-width: 300px;
   background: rgba(255, 255, 255, 0.95);
   border-radius: 12px;

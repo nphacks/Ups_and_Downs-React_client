@@ -1,32 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import './QuestionPanel.css';
-// import gameData from '../data/GameData.json';
+import { capitalizeFirstLetter } from '../utils/GameUtils';
+import { api } from '../services/api';
 
-// interface Answer {
-//   tookDecision?: boolean;
-//   decisionStrength?: number;
-//   tookAction?: boolean;
-//   actionStrength?: number;
-//   actionDescription?: string;
-//   withObject?: boolean;
-//   objectStrength?: number;
-//   action?: string;
-//   decision?: string;
-//   [key: string]: any;
-// }
-
-// interface Question {
-//   type: string;
-//   question: string;
-//   answerType: string;
-//   answer: Answer[];
-//   decision?: string;
-//   action?: string;
-//   object?: string;
-//   situation?: string;
-//   situtation?: string; // Note: including both spellings in case of typo in data
-//   [key: string]: any; // Allow any additional properties
-// }
 
 interface QuestionPanelProps {
   currentStep: number;
@@ -34,6 +10,8 @@ interface QuestionPanelProps {
   onCorrectAnswer: (answer: string, fullAnswerObj: any) => void;
   onWrongAnswer: (playerAnswer: string, correctAnswer: string, fullAnswerObj: any) => void;
   onQuestionSet: (questionData: any) => void;
+  isSnakeLadder?: boolean;
+  className?: string;
 }
 
 export function QuestionPanel({ 
@@ -41,47 +19,75 @@ export function QuestionPanel({
   gameData, 
   onCorrectAnswer, 
   onWrongAnswer,
-  onQuestionSet 
+  onQuestionSet,
+  className 
 }: QuestionPanelProps) {
   
   const [currentQuestion, setCurrentQuestion] = useState<any>(null);
   const hasSetQuestion = useRef(false);
 
+  const handleAnswer = async (answer: string, fullAnswerObj: any) => {
+    // Check if this is a snake/ladder question
+    if (className?.includes('snake-ladder')) {
+      try {
+        const narrative = fullAnswerObj[currentQuestion.answerType];
+        const decision = await api.determineGoodOrBadDecision({snippet: narrative});
+        
+        // Pass the decision along with the answer
+        onCorrectAnswer(answer, {
+          ...fullAnswerObj,
+          decision: decision
+        });
+      } catch (error) {
+        console.error('Error processing snake/ladder answer:', error);
+      }
+    } else {
+      // For regular questions, just pass the answer through
+      onCorrectAnswer(answer, fullAnswerObj);
+    }
+  };
+
   useEffect(() => {
     // Only set the question once when the component mounts
     if (!hasSetQuestion.current && gameData[currentStep]?.questions) {
       const questions = gameData[currentStep].questions;
-      const randomIndex = Math.floor(Math.random() * questions.length);
-      const questionData = questions[randomIndex];
+      
+      // Filter questions based on whether it's a snake/ladder position
+      const isSnakeLadder = className?.includes('snake-ladder');
+      const eligibleQuestions = questions.filter((q: any) => 
+        isSnakeLadder 
+          ? q.questionType === "snake/ladder"
+          : q.questionType !== "snake/ladder"
+      );
+
+      // If no eligible questions, fallback to all questions
+      const questionPool = eligibleQuestions.length > 0 ? eligibleQuestions : questions;
+      
+      const randomIndex = Math.floor(Math.random() * questionPool.length);
+      const questionData = questionPool[randomIndex];
       
       setCurrentQuestion(questionData);
       onQuestionSet(questionData);
       hasSetQuestion.current = true;
     }
-  }, [currentStep, gameData, onQuestionSet]);
+  }, [currentStep, gameData, onQuestionSet, className]);
 
   if (!currentQuestion) return null;
 
-  // const getAnswerText = (answer: Answer) => {
-  //   // Get the answer based on the answerType
-  //   const text = answer[currentQuestion.answerType] ?? '';
-  //   // Capitalize first letter
-  //   return text.charAt(0).toUpperCase() + text.slice(1);
-  // };
-
-  const capitalizeFirstLetter = (str: string): string => {
-    if (!str) return '';
-    return str.charAt(0).toUpperCase() + str.slice(1);
-  };
+  
 
   return (
+    <div className={`question-panel ${className}`.trim()}>
     <div className="question-panel">
       <h3>{currentQuestion.question}</h3>
       <div className="options">
         {currentQuestion.answer.map((option: any, index: number) => (
           <button
             key={index}
-            onClick={() => onCorrectAnswer(option[currentQuestion.answerType], option)}
+            onClick={() => handleAnswer(
+              option[currentQuestion.answerType], 
+              option
+            )}
             className="option-button"
           >
             {capitalizeFirstLetter(option[currentQuestion.answerType])}
@@ -89,6 +95,7 @@ export function QuestionPanel({
         ))}
       </div>
     </div>
+  </div>
   );
 }
 

@@ -1,17 +1,24 @@
 import { useNavigate } from 'react-router-dom';
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useState } from 'react';
 import { characterModel } from '../model';
 import GameRenderer from '../components/GameRenderer';
 
 import GamePlay from './GamePlay';
 import useGameState from '../hooks/useGameState';
-// import type { GameState } from '../hooks/useGameState';
 
 import './Game.css';
 import '../styles/error.css';
+import { generateSnakeLadderPositions } from '../utils/GameUtils';
 
 function Game() {
   const navigate = useNavigate();
+
+  const [snakeLadderPositions] = useState<Set<number>>(() => {
+    const positions = generateSnakeLadderPositions();
+    localStorage.setItem('snakeLadderPositions', JSON.stringify([...positions]));
+    return positions;
+  });
+
   const {
     state: { currentStep, isLoading, error },
     setError,
@@ -41,8 +48,8 @@ function Game() {
   }, [isLoading, error, decrementStep]);
 
   const handleGameComplete = useCallback(() => {
-    resetGame();
-    navigate('/analysis');
+    // resetGame();
+    // navigate('/analysis');
   }, [navigate, resetGame]);
 
   useEffect(() => {
@@ -95,14 +102,16 @@ function Game() {
           onContextLost={() => setError('WebGL context lost. Please refresh the page.')}
           characterModel={characterModel}
           currentStep={currentStep}
+          snakeLadderPositions={snakeLadderPositions}
         />
       </div>
       <GamePlay 
-          climb={handleClimb}
-          fall={handleFall}
-          currentStep={currentStep}
-          gameOver={currentStep >= 100}
-        />
+        climb={handleClimb}
+        fall={handleFall}
+        currentStep={currentStep}
+        // gameOver={currentStep >= 100}
+        snakeLadderPositions={snakeLadderPositions}
+      />
       </div>
     // </div>
   );

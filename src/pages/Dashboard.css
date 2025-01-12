@@ -1,3 +1,8 @@
+.logo-container {
+  display: flex;
+  justify-content: center;
+}
+
 .card {
     padding: 2em;
   }
@@ -10,6 +15,10 @@
     padding: 20px;
     max-width: 600px;
     margin: 0 auto;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
   }
   
   .dashboard-buttons {
@@ -21,6 +30,10 @@
   
   .game-setup-form {
     margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
   }
   
   .session-info {
@@ -28,6 +41,7 @@
     padding: 10px;
     border-radius: 5px;
     margin-bottom: 20px;
+    width: 200px;
   }
   
   .form-group {
@@ -35,12 +49,14 @@
   }
   
   .form-group label {
-    display: block;
+    display: flex;
     margin-bottom: 5px;
+    flex-direction: column;
+    align-items: center;
   }
   
   .form-group input {
-    width: 100%;
+    width: 200px;
     padding: 8px;
     border: 1px solid #ddd;
     border-radius: 4px;

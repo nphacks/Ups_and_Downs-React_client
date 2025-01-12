@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import logo from '../assets/Ups-and-Downs-logo.png';
 import './Dashboard.css';
-import { GameSession } from '../types/GameTypes';
+import { GameSession } from '../types/gameTypes';
+import { api } from '../services/api';
 
 function Dashboard() {
     const navigate = useNavigate();
@@ -11,42 +12,32 @@ function Dashboard() {
       sessionId: '',
       playerId: '',
       playerName: '',
-      fatherName: '',
-      motherName: '',
+      narrative: '',
       steps: []
     });
 
     const firstNames = [
       'James', 'John', 'Robert', 'Michael', 'William', 'David', 'Mary', 
       'Patricia', 'Jennifer', 'Linda', 'Elizabeth', 'Barbara', 'Susan', 
-      'Sarah', 'Karen', 'Nancy', 'Margaret', 'Lisa', 'Betty', 'Dorothy'
-    ];
-
-    const lastNames = [
+      'Sarah', 'Karen', 'Nancy', 'Margaret', 'Lisa', 'Betty', 'Dorothy',
       'Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller',
       'Davis', 'Rodriguez', 'Martinez', 'Hernandez', 'Lopez', 'Gonzalez',
       'Wilson', 'Anderson', 'Thomas', 'Taylor', 'Moore', 'Jackson', 'Martin'
     ];
 
-    const generateRandomName = () => {
+    const generateRandomNames = () => {
       const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
-      const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
-      return `${firstName} ${lastName}`;
+      setGameSession(prev => ({
+        ...prev,
+        playerName: firstName
+      }));
     };
+    
 
     const generateRandomId = (length: number) => {
       return Math.floor(Math.random() * Math.pow(10, length))
         .toString()
         .padStart(length, '0');
-    };
-
-    const generateRandomNames = () => {
-      setGameSession(prev => ({
-        ...prev,
-        playerName: generateRandomName(),
-        fatherName: generateRandomName(),
-        motherName: generateRandomName()
-      }));
     };
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -67,22 +58,38 @@ function Dashboard() {
       }));
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
       e.preventDefault();
-      /// Initialize game data structure
-      const newGameSession: GameSession = {
-        sessionId: gameSession.sessionId,
-        playerId: gameSession.playerId,
-        playerName: gameSession.playerName,
-        fatherName: gameSession.fatherName,
-        motherName: gameSession.motherName,
-        steps: []
-      };
-
-      // Store in localStorage
-      localStorage.setItem('gameSession', JSON.stringify(newGameSession));
-      navigate('/game');
+      try {
+        // localStorage.removeItem('gameSession')
+        // Call API to create game session
+    
+        // Initialize game data structure
+        const newGameSession: GameSession = {
+          sessionId: gameSession.sessionId,
+          playerId: gameSession.playerId,
+          playerName: gameSession.playerName,
+          narrative: '',
+          steps: []
         };
+
+        await api.createGameSession({
+          gameSessionId: newGameSession.sessionId,
+          id: newGameSession.playerId,
+          name: newGameSession.playerName,
+          eventDescription: `I am born to loving parents.`
+        });
+    
+        // Store in localStorage
+        localStorage.setItem('gameSession', JSON.stringify(newGameSession));
+        
+        // Navigate to game page
+        navigate('/game');
+      } catch (error) {
+        console.error('Error creating game session:', error);
+      }
+    };
+    
 
     const navigateToAnalysis = () => {
       navigate('/analysis');
@@ -90,8 +97,8 @@ function Dashboard() {
 
     return (
       <div className="dashboard">
-        <div>
-          <img src={logo} alt="Ups and Downs Logo" height="250px"/>
+        <div className='logo-container'>
+          <img src={logo} alt="Ups and Downs Logo" height="400px"/>
         </div>
         
         {!showForm ? (
@@ -109,33 +116,11 @@ function Dashboard() {
             <form onSubmit={handleSubmit}>
               <div className="form-group">
                 <label>
-                  Player Name:
+                  Player Name<br/><br/>
                   <input 
                     type="text" 
                     name="playerName" 
                     value={gameSession.playerName}
-                    onChange={handleInputChange}
-                  />
-                </label>
-              </div>
-              <div className="form-group">
-                <label>
-                  Father Name:
-                  <input 
-                    type="text" 
-                    name="fatherName"
-                    value={gameSession.fatherName}
-                    onChange={handleInputChange}
-                  />
-                </label>
-              </div>
-              <div className="form-group">
-                <label>
-                  Mother Name:
-                  <input 
-                    type="text" 
-                    name="motherName"
-                    value={gameSession.motherName}
                     onChange={handleInputChange}
                   />
                 </label>

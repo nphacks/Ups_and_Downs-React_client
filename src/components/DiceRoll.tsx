@@ -3,9 +3,10 @@ import './DiceRoll.css';
 
 interface DiceRollProps {
   onRoll: (value: number) => void;
+  disabled: boolean;
 }
 
-export function DiceRoll({ onRoll }: DiceRollProps) {
+export function DiceRoll({ onRoll, disabled }: DiceRollProps) {
   const [currentRoll, setCurrentRoll] = useState<number | null>(null);
   const [isRolling, setIsRolling] = useState(false);
   
@@ -27,11 +28,11 @@ export function DiceRoll({ onRoll }: DiceRollProps) {
     
     setIsRolling(true);
     setCurrentRoll(null);
-    const roll = Math.floor(Math.random() * 3) + 1;
+    const roll = Math.floor(Math.random() * 6) + 1;
     
     let count = 0;
     intervalRef.current = setInterval(() => {
-      setCurrentRoll(Math.floor(Math.random() * 3) + 1);
+      setCurrentRoll(Math.floor(Math.random() * 6) + 1);
       count++;
       if (count > 10) {
         if (intervalRef.current) {
@@ -45,25 +46,43 @@ export function DiceRoll({ onRoll }: DiceRollProps) {
     }, 100);
   };
 
+  const DicePatterns = {
+    1: [[4]],
+    2: [[0], [8]],
+    3: [[0], [4], [8]],
+    4: [[0, 2], [6, 8]],
+    5: [[0, 2], [4], [6, 8]],
+    6: [[0, 2], [3, 5], [6, 8]]
+  };
+
+  const renderDots = (number: number) => {
+    const pattern = DicePatterns[number as keyof typeof DicePatterns];
+    return (
+      <div className="dice-face">
+        {[...Array(9)].map((_, index) => (
+          <div 
+            key={index} 
+            className={`dot-position ${
+              pattern.some(row => row.includes(index)) ? 'dot' : ''
+            }`}
+          />
+        ))}
+      </div>
+    );
+  };
+
   return (
     <div className="dice-container">
       <div className={`dice ${isRolling ? 'rolling' : ''}`}>
-        {currentRoll !== null && (
-          <div className="dice-face">
-            {[...Array(currentRoll)].map((_, i) => (
-              <div key={i} className="dot" />
-            ))}
-          </div>
-        )}
+        {currentRoll !== null && renderDots(currentRoll)}
       </div>
       <button 
         onClick={rollDice} 
         className="dice-button"
-        disabled={isRolling}
+        disabled={disabled || isRolling}
       >
         {isRolling ? 'Rolling...' : 'Roll Dice'}
       </button>
-      
     </div>
   );
 }
