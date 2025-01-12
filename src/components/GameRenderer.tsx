@@ -226,10 +226,20 @@ export function GameRenderer({
       onError('Model loading timed out. Please refresh the page.');
     }, 10000);
 
+    const base64Data = characterModel.split(',')[1];
+    const binaryString = window.atob(base64Data);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    const blob = new Blob([bytes], { type: 'model/gltf-binary' });
+    const objectURL = URL.createObjectURL(blob);
+
     loader.load(
-      characterModel,
+      objectURL,
       (gltf) => {
         clearTimeout(modelLoadTimeout);
+        URL.revokeObjectURL(objectURL); // Clean up
         const personModel = gltf.scene;
         personModel.scale.set(0.1, 0.1, 0.1);
         personModel.traverse((child) => {
@@ -245,6 +255,7 @@ export function GameRenderer({
       undefined,
       (error) => {
         clearTimeout(modelLoadTimeout);
+        URL.revokeObjectURL(objectURL); // Clean up
         console.warn('Failed to load character model, using fallback cube:', error);
         // Create a fallback cube
         const geometry = new THREE.BoxGeometry(0.2, 0.2, 0.2);
