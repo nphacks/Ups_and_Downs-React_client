@@ -11,7 +11,7 @@ import '../styles/error.css';
 import { generateSnakeLadderPositions } from '../utils/GameUtils';
 
 function Game() {
-  
+  console.log('GameRendered at:', new Date().toISOString());
   const navigate = useNavigate();
 
   const [snakeLadderPositions] = useState<Set<number>>(() => {
