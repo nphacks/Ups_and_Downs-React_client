@@ -10,11 +10,11 @@ export default defineConfig({
   },
   assetsInclude: ['**/*.glb'],
   build: {
+    sourcemap: true, // Add this for debugging
     outDir: 'dist',
-    assetsDir: 'assets',
     rollupOptions: {
       output: {
-        assetFileNames: 'assets/[name][extname]'
+        manualChunks: undefined
       }
     }
   },
