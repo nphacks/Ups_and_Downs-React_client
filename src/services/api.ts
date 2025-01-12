@@ -11,7 +11,7 @@ export const api = {
           determineGoodOrBadDecision(snippet: $snippet)
         }
       `;
-  
+
       const result = await makeGraphQLRequest(query, variables);
       return result.determineGoodOrBadDecision.toLowerCase();
   },
@@ -189,7 +189,6 @@ export const api = {
         )
       }
     `;
-    console.log("End Session function -----> ", variables)
     return makeGraphQLRequest(query, variables);
   },
   
