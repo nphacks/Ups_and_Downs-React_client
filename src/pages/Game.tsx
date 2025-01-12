@@ -92,11 +92,22 @@ function Game() {
     }
 
     if (isLoading) {
-      console.log('6b. Rendering loading state');
+      console.log('6b. Rendering loading state, waiting for GameRenderer to complete loading');
       return (
         <div className="game-page">
           <div className="loading-message">
             Loading game assets...
+            <GameRenderer
+              onError={setError}
+              onLoadComplete={() => {
+                console.log('GameRenderer load complete callback fired');
+                setLoading(false);
+              }}
+              onContextLost={() => setError('WebGL context lost. Please refresh the page.')}
+              characterModel={characterModel}
+              currentStep={currentStep}
+              snakeLadderPositions={snakeLadderPositions}
+            />
           </div>
         </div>
       );
