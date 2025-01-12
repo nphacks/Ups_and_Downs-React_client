@@ -12,15 +12,9 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
-   rollupOptions: {
+    rollupOptions: {
       output: {
-        assetFileNames: (assetInfo) => {
-          const name = assetInfo.name || '';
-          if (/\.glb$/.test(name)) {
-            return 'assets/[name][extname]';
-          }
-          return 'assets/[name]-[hash][extname]';
-        }
+        assetFileNames: 'assets/[name][extname]'
       }
     }
   },

@@ -1,5 +1,3 @@
-// model.ts
-const characterModel = import.meta.env.PROD 
-  ? '/assets/character.glb'  // production path
-  : '/assets/character.glb'; // development path
+import characterModelPath from './assets/character.glb';
+const characterModel = characterModelPath;
 export { characterModel };
