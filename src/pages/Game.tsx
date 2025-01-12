@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { useEffect, useCallback, useState } from 'react';
+import React, { useEffect, useCallback, useState } from 'react';
 import { characterModel } from '../model';
 import GameRenderer from '../components/GameRenderer';
 
@@ -73,6 +73,8 @@ function Game() {
     }
   }, [currentStep, handleGameComplete]);
 
+  
+
   // Only show critical errors that prevent gameplay
   if (error && error !== 'Failed to load character model') {
     return (
@@ -93,10 +95,11 @@ function Game() {
       </div>
     );
   }
-
+  console.log("Parent component rendering");
   return (
     <div className="game-page" style={{ position: 'relative', minHeight: '100vh' }}>
       <div className="game-renderer-container">
+        console.log("About to render GameRenderer");
         <GameRenderer
           onError={setError}
           onLoadComplete={() => setLoading(false)}

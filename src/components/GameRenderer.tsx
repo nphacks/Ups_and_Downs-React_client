@@ -33,6 +33,8 @@ export function GameRenderer({
   snakeLadderPositions
 }: GameRendererProps) {
 
+  console.log("GameRenderer component function called");
+
   useEffect(() => {
     console.log("GameRenderer mounted");
     console.log("Container ref exists:", !!containerRef.current);
