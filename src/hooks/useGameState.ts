@@ -7,6 +7,7 @@ export interface GameState {
 }
 
 export function useGameState(maxSteps: number = 100) {
+  console.log('useGameState called with maxSteps:', maxSteps);
   const [state, setState] = useState<GameState>({
     currentStep: 0,
     isLoading: true,
