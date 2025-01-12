@@ -32,6 +32,12 @@ export function GameRenderer({
   currentStep,
   snakeLadderPositions
 }: GameRendererProps) {
+
+  useEffect(() => {
+    console.log("GameRenderer mounted");
+    console.log("Container ref exists:", !!containerRef.current);
+  }, []);
+
   const containerRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
@@ -336,11 +342,14 @@ export function GameRenderer({
   }, []);
 
   useEffect(() => {
+    console.log("Initialization effect starting");
     isActiveRef.current = true;
     lastRenderTimeRef.current = performance.now();
     const cleanupFn = initializeRenderer();
+    console.log("Renderer initialized");
     
     return () => {
+      console.log("Cleanup running");
       if (cleanupFn) cleanupFn();
       cleanup();
       animationStateRef.current = {
@@ -368,7 +377,18 @@ export function GameRenderer({
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  return <div ref={containerRef} className="game-renderer" />;
+  return (
+    <div 
+      ref={containerRef} 
+      className="game-renderer" 
+      style={{ 
+        border: '2px solid red',  // Debug border
+        width: '100vw',           // Ensure full width
+        height: '100vh',          // Ensure full height
+        background: '#f0f0f0'     // Debug background
+      }} 
+    />
+  );
 }
 
 export default GameRenderer;
