@@ -36,7 +36,6 @@ interface StepLog {
 type HistoryEntry = RollHistoryEntry | StepLog;
 
 function GamePlay({ climb, fall, currentStep, snakeLadderPositions }: GamePlayProps) {
-  // console.log('Rendering GamePlay with step:', currentStep);
 
   const [gameSession, setGameSession] = useState<GameSession>(() => {
     const savedSession = JSON.parse(localStorage.getItem('gameSession') || '{}');
@@ -289,7 +288,6 @@ function GamePlay({ climb, fall, currentStep, snakeLadderPositions }: GamePlayPr
   
 
   const getRandomScenarios = (stepIndex: number): string[] => {
-    console.log('Random Scenarios being genrated')
     const stepData = gameData[stepIndex];
     if (!stepData?.scenarios) return [];
     
@@ -324,9 +322,7 @@ function GamePlay({ climb, fall, currentStep, snakeLadderPositions }: GamePlayPr
     }
   
     setRollHistory(prev => {
-      // console.log('Previous history:', prev);
       const lastRollEntry = [...prev].reverse().find(entry => entry.type === 'roll');
-      // console.log('Found last roll entry:', lastRollEntry);
       if (lastRollEntry) {
         return prev.map(entry => 
           entry === lastRollEntry 
@@ -399,7 +395,6 @@ function GamePlay({ climb, fall, currentStep, snakeLadderPositions }: GamePlayPr
   }, [snakeLadderPositions]);
   
   const handleAnalyzeGame = async () => {
-    console.log('Starting Analyze')
     setIsLoading(true);
     try {
       const storedSession = localStorage.getItem('gameSession');

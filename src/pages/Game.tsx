@@ -10,19 +10,14 @@ import './Game.css';
 import '../styles/error.css';
 import { generateSnakeLadderPositions } from '../utils/GameUtils';
 
-function Game() {
-  console.log('1. GameRendered at:', new Date().toISOString());
-  
+function Game() {  
   const navigate = useNavigate();
-  console.log('2. After navigate initialization');
 
   const [snakeLadderPositions] = useState<Set<number>>(() => {
-    console.log('3. Generating snake ladder positions');
     const positions = generateSnakeLadderPositions();
     localStorage.setItem('snakeLadderPositions', JSON.stringify([...positions]));
     return positions;
   });
-  console.log('4. After snake ladder positions');
 
   const {
     state: { currentStep, isLoading, error },
@@ -32,7 +27,6 @@ function Game() {
     decrementStep,
     resetGame,
   } = useGameState(100);
-  console.log('5. After useGameState', { currentStep, isLoading, error });
 
   // Reset game state when component unmounts
   useEffect(() => {
@@ -81,7 +75,6 @@ function Game() {
   try {
   // Only show critical errors that prevent gameplay
     if (error && error !== 'Failed to load character model') {
-      console.log('6a. Rendering error state');
       return (
         <div className="game-page">
           <div className="error-message">
@@ -92,7 +85,6 @@ function Game() {
     }
 
     if (isLoading) {
-      console.log('6b. Rendering loading state, waiting for GameRenderer to complete loading');
       return (
         <div className="game-page">
           <div className="loading-message">
@@ -100,7 +92,6 @@ function Game() {
             <GameRenderer
               onError={setError}
               onLoadComplete={() => {
-                console.log('GameRenderer load complete callback fired');
                 setLoading(false);
               }}
               onContextLost={() => setError('WebGL context lost. Please refresh the page.')}
@@ -112,7 +103,6 @@ function Game() {
         </div>
       );
     }
-    console.log('6c. About to render main component');
     return (
       <div className="game-page" style={{ position: 'relative', minHeight: '100vh' }}>
         <div className="game-renderer-container">
@@ -134,7 +124,6 @@ function Game() {
       </div>
     );
   } catch (err) {
-    console.error('7. Render error caught:', err);
     return <div>Something went wrong</div>;
   }
 }

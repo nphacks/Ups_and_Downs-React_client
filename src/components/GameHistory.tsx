@@ -4,6 +4,7 @@ import DiceRoll from './DiceRoll';
 import gameData from '../data/GameData.json';
 import { GameSession } from '../types/gameTypes';
 import { api } from '../services/api';
+import { capitalizeFirstLetter } from '../utils/GameUtils';
 
 interface RollHistoryEntry {
   type: 'roll';
@@ -36,9 +37,9 @@ interface StepLog {
 type HistoryEntry = RollHistoryEntry | StepLog;
 
 export function GameHistory({ climb, history, currentStep, gameOver, onNewRoll, onUpdateNarrative, setGameOver }: GameHistoryProps) {
-  // console.log('Rendering history component with:', history);
   const [diceValue, setDiceValue] = useState(0);
   const [isMoving, setIsMoving] = useState(false);
+  const [hasShownExactRollMessage, setHasShownExactRollMessage] = useState(false);
   const [gameSession, setGameSession] = useState<GameSession>(() => {
       const savedSession = JSON.parse(localStorage.getItem('gameSession') || '{}');
       return {
@@ -113,6 +114,9 @@ export function GameHistory({ climb, history, currentStep, gameOver, onNewRoll, 
         // Invalid move - let player roll again
         return;
       }
+      if (potentialPosition === 100) {
+        setHasShownExactRollMessage(true);
+      }
     }
 
     setDiceValue(value);
@@ -147,7 +151,6 @@ export function GameHistory({ climb, history, currentStep, gameOver, onNewRoll, 
       currentPosition: currentStep + value,
       outcome: "Moving forward..."
     };
-    // console.log('Creating roll entry:', rollEntry);
 
     // Process steps after roll entry is added
     for (const stepLog of stepLogs) {
@@ -167,7 +170,20 @@ export function GameHistory({ climb, history, currentStep, gameOver, onNewRoll, 
   return (
     <div className={styles.gameInformationPanel}>
       <div className={styles.diceRoll}>
-      <DiceRoll onRoll={handleDiceRoll} disabled={gameOver || isMoving} />
+      {currentStep > 94 && !hasShownExactRollMessage && (
+        <div style={{
+          backgroundColor: '#f8f9fa',
+          padding: '8px 12px',
+          borderRadius: '5px',
+          marginBottom: '10px',
+          textAlign: 'center',
+          border: '1px solid #ddd',
+          color: '#666'
+      }}>
+      You need an exact die roll to reach the 100th step!
+    </div>
+  )}
+        <DiceRoll onRoll={handleDiceRoll} disabled={gameOver || isMoving} />
       </div>
       <div className={styles.historyPanel}>
         <h3 className={styles.historyTitle}>Game History</h3>
@@ -198,7 +214,7 @@ export function GameHistory({ climb, history, currentStep, gameOver, onNewRoll, 
                         )}
                         {entry.outcome && (
                           <div className={styles.rollOutcome}>
-                            <b>Response: </b>{entry.outcome}
+                            <b>Response: </b>{capitalizeFirstLetter(entry.outcome)}
                           </div>
                         )}
                       </div>

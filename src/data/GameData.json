@@ -32,7 +32,7 @@
             {
                 "type": "decision",  
                 "question": "Something green was put in my mouth by my dad, do I want to eat it?",
-                "answerType": "action_description",
+                "answerType": "decision_description",
                 "answer": [
                     {
                         "decision_made": true,

@@ -157,7 +157,6 @@ function GameAnalysis() {
   
       // Send to API and get response
       const botResponse: any = await api.analysisChat({snippet});
-      console.log(botResponse)
       // Create bot message with API response
       const botMessage: ChatMessage = {
         gamesession_id: Date.now().toString(),

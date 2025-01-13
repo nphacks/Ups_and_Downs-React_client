@@ -33,12 +33,6 @@ export function GameRenderer({
   snakeLadderPositions
 }: GameRendererProps) {
 
-  console.log("GameRenderer component function called");
-
-  useEffect(() => {
-    console.log("GameRenderer mounted");
-    console.log("Container ref exists:", !!containerRef.current);
-  }, []);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
@@ -344,14 +338,11 @@ export function GameRenderer({
   }, []);
 
   useEffect(() => {
-    console.log("Initialization effect starting");
     isActiveRef.current = true;
     lastRenderTimeRef.current = performance.now();
     const cleanupFn = initializeRenderer();
-    console.log("Renderer initialized");
     
     return () => {
-      console.log("Cleanup running");
       if (cleanupFn) cleanupFn();
       cleanup();
       animationStateRef.current = {
