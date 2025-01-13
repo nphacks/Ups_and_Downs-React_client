@@ -48,3 +48,20 @@ export const removeQuotes = (str: string): string => {
   if (!str) return '';
   return str.replace(/['"]/g, '');
 };
+
+export const cleanString = (str: string): string => {
+  if (!str) return '';
+  
+  let cleaned = str
+    // First remove all other special characters except \n
+    .replace(/[*{}""]/g, '')
+    // Keep \n intact by temporarily replacing it
+    .replace(/\\n/g, '§§') // use a temporary placeholder
+    // Remove any remaining backslashes
+    .replace(/\\/g, '')
+    // Restore \n
+    .replace(/§§/g, '\\n')
+    .trim();
+    
+  return cleaned;
+};

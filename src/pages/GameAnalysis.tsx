@@ -1,58 +1,73 @@
 // Using useNavigate hook
 import { useNavigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import './GameAnalysis.css';
+import { api } from '../services/api';
+import { cleanString, removeQuotes } from '../utils/GameUtils';
+import { TransitionGroup, CSSTransition } from 'react-transition-group';
 
-interface GameSession {
-  id: string;
-  startTime: Date;
-  duration: number;
+export interface GameSessions {
+  allGameSessionNodes: {
+    gamesession_id: any;
+    session: string;
+  }[]
 }
 
 interface ChatMessage {
-  id: string;
+  gamesession_id: string;
   text: string;
   sender: 'user' | 'bot';
   timestamp: Date;
 }
 
-// Dummy data for game sessions
-const dummyGameSessions: GameSession[] = [
-  {
-    id: '1',
-    startTime: new Date('2024-01-15T10:00:00'),
-    duration: 300
-  },
-  {
-    id: '2',
-    startTime: new Date('2024-01-16T15:30:00'),
-    duration: 450
-  }
-];
+const TypingIndicator = () => (
+  <div className="typing-indicator">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+);
 
-type BotResponsesType = {
-  [key: string]: string[]
-}
-
-// Dummy responses from the analysis bot
-const botResponses: BotResponsesType = {
-  '1': [
-    "I noticed you struggled with resource management in the early game.",
-    "Your decision making improved significantly in the mid-game phase.",
-    "Would you like specific tips on improving your early game strategy?"
-  ],
-  '2': [
-    "Your performance in this session showed great improvement!",
-    "I noticed you made better strategic decisions compared to previous games.",
-    "Would you like to discuss any specific aspects of this session?"
-  ]
-};
-
+// Add this component at the top level of your file
+const ChatMessage = ({ message }: { message: ChatMessage }) => (
+  <div 
+    style={{
+      margin: '10px 0',
+      textAlign: message.sender === 'user' ? 'right' : 'left',
+      color: message.sender === 'user' ? '#0066cc' : '#333'
+    }}
+  >
+    <div style={{
+      background: message.sender === 'user' ? '#e6f3ff' : '#f0f0f0',
+      padding: '8px 12px',
+      borderRadius: '12px',
+      display: 'inline-block',
+      maxWidth: '70%',
+      whiteSpace: 'pre-wrap'
+    }}>
+      {message.gamesession_id === 'loading' ? (
+        <TypingIndicator />
+      ) : (
+        typeof message.text === 'string' ? 
+          message.text.split('\\n').map((line, index) => (
+            <React.Fragment key={index}>
+              {line}
+              {index < message.text.split('\\n').length - 1 && <br />}
+            </React.Fragment>
+          ))
+          : message.text
+      )}
+    </div>
+    <small style={{ display: 'block', marginTop: '4px' }}>
+      {message.timestamp.toLocaleTimeString()}
+    </small>
+  </div>
+);
 
 function GameAnalysis() {
   const navigate = useNavigate();
 
-  const [gameSessions, setGameSessions] = useState<GameSession[]>(dummyGameSessions);
+  const [gameSessions, setGameSessions] = useState<GameSessions['allGameSessionNodes']>([]);
   const [selectedSession, setSelectedSession] = useState<string | null>(null);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
@@ -60,100 +75,151 @@ function GameAnalysis() {
 
   // Fetch game sessions (mock data for now)
   useEffect(() => {
-    // Replace this with actual API call
-    const mockSessions = [
-      { id: '1', startTime: new Date(), duration: 300 },
-      { id: '2', startTime: new Date(Date.now() - 86400000), duration: 450 },
-      
-    ];
-    setGameSessions(mockSessions);
+    fetchSessions();
+    
   }, []);
+
+  const fetchSessions = async () => {
+    const sessions: GameSessions = await api.allGameSessions();
+    setGameSessions(sessions.allGameSessionNodes);
+}
 
   const navigateToHome = () => {
     navigate('/');
   };
 
-  const handleSessionClick = (sessionId: string) => {
-    setSelectedSession(sessionId);
+  const handleSessionClick = (sessionData: any) => {
+    setSelectedSession(sessionData);
+    let session = sessionData;
     
+    // Function to extract summary from session_data
+    const extractSummary = (sessionData: string) => {
+      const marker = "... The summary for this game will begin from here ...";
+      const summaryIndex = sessionData.indexOf(marker);
+      
+      if (summaryIndex !== -1) {
+        // Get everything after the marker phrase
+        return sessionData.substring(summaryIndex + marker.length).trim();
+      }
+      // Return the whole session data if marker isn't found
+      return sessionData;
+    };
+  
     // Load existing chat history or initialize with bot's first message
-    if (chatHistory[sessionId]) {
-      setChatMessages(chatHistory[sessionId]);
+    if (chatHistory[sessionData.gamesession_id]) {
+      setChatMessages(chatHistory[sessionData.gamesession_id]);
     } else {
+      const summary = cleanString(extractSummary(session.session_data));
       const initialMessage: ChatMessage = {
-        id: Date.now().toString(),
-        text: botResponses[sessionId][0],
+        gamesession_id: session.gamesession_id,
+        text: summary,
         sender: 'bot',
         timestamp: new Date()
       };
+  
       setChatMessages([initialMessage]);
       setChatHistory(prev => ({
         ...prev,
-        [sessionId]: [initialMessage]
+        [sessionData.gamesession_id]: [initialMessage]
       }));
     }
-  };
+  };  
 
   // Handle sending messages
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (!newMessage.trim() || !selectedSession) return;
 
     const userMessage: ChatMessage = {
-      id: Date.now().toString(),
+      gamesession_id: Date.now().toString(),
       text: newMessage,
       sender: 'user',
       timestamp: new Date()
     };
 
-    // Get random bot response
-    const botMessage: ChatMessage = {
-      id: (Date.now() + 1).toString(),
-      text: botResponses[selectedSession][Math.floor(Math.random() * botResponses[selectedSession].length)],
+    const messagesWithUser = [...chatMessages, userMessage];
+    setChatMessages(messagesWithUser);
+
+    setNewMessage('');
+
+    const loadingMessage: ChatMessage = {
+      gamesession_id: 'loading',
+      text: '...',
       sender: 'bot',
       timestamp: new Date()
     };
+    setChatMessages([...messagesWithUser, loadingMessage]);
 
-    const updatedMessages = [...chatMessages, userMessage, botMessage];
-    setChatMessages(updatedMessages);
-    
-    setChatHistory(prev => ({
-      ...prev,
-      [selectedSession]: updatedMessages
-    }));
-
-    setNewMessage('');
+    try {
+      // Format conversation history
+      const snippet = messagesWithUser
+        .map(msg => `${msg.sender === 'bot' ? 'Bot' : 'User'}: ${msg.text}`)
+        .join('\n');
+  
+      // Send to API and get response
+      const botResponse: any = await api.analysisChat({snippet});
+      console.log(botResponse)
+      // Create bot message with API response
+      const botMessage: ChatMessage = {
+        gamesession_id: Date.now().toString(),
+        text: botResponse.analysisChat,
+        sender: 'bot',
+        timestamp: new Date()
+      };
+  
+      // Update messages (remove loading message and add real response)
+      const updatedMessages = [...messagesWithUser, botMessage];
+      setChatMessages(updatedMessages);
+      
+      // Update chat history
+      setChatHistory(prev => ({
+        ...prev,
+        [selectedSession]: updatedMessages
+      }));
+  
+    } catch (error) {
+      
+      const errorMessage: ChatMessage = {
+        gamesession_id: Date.now().toString(),
+        text: "Sorry, I couldn't process your message. Please try again.",
+        sender: 'bot',
+        timestamp: new Date()
+      };
+      
+      const updatedMessages = [...messagesWithUser, errorMessage];
+      setChatMessages(updatedMessages);
+      setChatHistory(prev => ({
+        ...prev,
+        [selectedSession]: updatedMessages
+      }));
+    }
   };
 
   return (
     <div className="game-analysis-container" style={{ display: 'flex', height: '100vh' }}>
       {/* Left Side - Game Sessions */}
-      <div className="sessions-panel">
-        <h2>Game Sessions</h2>
+      <div className="sessions-panel" style={{ flex: '0 0 450px' }}>
+        <h2 style={{ paddingLeft: '18px' }}>Game Sessions</h2>
         <div className="sessions-list">
-          {gameSessions.map(session => (
-            <div 
-              key={session.id} 
-              className={`session-item ${selectedSession === session.id ? 'selected' : ''}`}
-              onClick={() => handleSessionClick(session.id)}
-              style={{
-                cursor: 'pointer',
-                padding: '10px',
-                margin: '5px',
-                border: '1px solid #ddd',
-                backgroundColor: selectedSession === session.id ? '#e6f3ff' : 'white'
-              }}
-            >
-              <div className="session-date">
-                Date: {session.startTime.toLocaleDateString()}
+            {gameSessions?.map((session, index) => {
+            return (
+              <div 
+                key={`session-${session.gamesession_id}-${index}`} // More specific key
+                className={`session-item ${selectedSession === session.gamesession_id ? 'selected' : ''}`}
+                onClick={() => handleSessionClick(session)}
+                style={{
+                  cursor: 'pointer',
+                  padding: '10px',
+                  margin: '5px',
+                  width: '150px',
+                  border: '1px solid #ddd',
+                  backgroundColor: selectedSession === session.gamesession_id ? '#e6f3ff' : 'white'
+                }}
+              >
+                {/* Add some content to make sure the div isn't empty */}
+                <span>Session {removeQuotes(session.gamesession_id)}</span>
               </div>
-              <div className="session-time">
-                Time: {session.startTime.toLocaleTimeString()}
-              </div>
-              <div className="session-duration">
-                Duration: {Math.floor(session.duration / 60)}m {session.duration % 60}s
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
         <button 
           className="new-game-button"
@@ -167,36 +233,24 @@ function GameAnalysis() {
       <div className="chat-panel" style={{ flex: 1, padding: '20px', display: 'flex', flexDirection: 'column' }}>
         <h2>Game Analysis Chat</h2>
         <div className="chat-messages" style={{ 
-          flex: 1, 
-          overflowY: 'auto',
-          marginBottom: '20px',
-          border: '1px solid #eee',
-          padding: '10px'
-        }}>
-          {chatMessages.map(message => (
-            <div 
-              key={message.id} 
-              style={{
-                margin: '10px 0',
-                textAlign: message.sender === 'user' ? 'right' : 'left',
-                color: message.sender === 'user' ? '#0066cc' : '#333'
-              }}
-            >
-              <div style={{
-                background: message.sender === 'user' ? '#e6f3ff' : '#f0f0f0',
-                padding: '8px 12px',
-                borderRadius: '12px',
-                display: 'inline-block',
-                maxWidth: '70%'
-              }}>
-                {message.text}
-              </div>
-              <small style={{ display: 'block', marginTop: '4px' }}>
-                {message.timestamp.toLocaleTimeString()}
-              </small>
-            </div>
-          ))}
-        </div>
+            flex: 1, 
+            overflowY: 'auto',
+            marginBottom: '20px',
+            border: '1px solid #eee',
+            padding: '10px'
+          }}>
+            <TransitionGroup>
+              {chatMessages.map(message => (
+                <CSSTransition
+                  key={message.gamesession_id}
+                  timeout={300}
+                  classNames="message"
+                >
+                  <ChatMessage message={message} />
+                </CSSTransition>
+              ))}
+            </TransitionGroup>
+          </div>
         <div className="chat-input" style={{ display: 'flex', gap: '10px' }}>
           <input
             type="text"

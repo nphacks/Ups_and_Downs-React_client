@@ -1,8 +1,10 @@
 // src/services/api.ts
 
 import { config } from "../config/config";
+import { GameSessions } from "../pages/GameAnalysis";
 
 const BASE_URL = config.MODUS_API_URL; // or your backend URL
+// const BASE_URL = 'http://localhost:8686/explorer';
     
 export const api = {
   determineGoodOrBadDecision: async (variables: DetermineGoodOrBadDecisionPayload): Promise<string> => {
@@ -206,7 +208,24 @@ export const api = {
               lifeSummary
             }
           }`;
-  return makeGraphQLRequest(query, variables);
+    return makeGraphQLRequest(query, variables);
+  },
+
+  allGameSessions(): Promise<GameSessions> {
+    const query = `query AllGameSessionNodes {
+      allGameSessionNodes {
+        gamesession_id
+        session_data
+      }
+    }`;
+    return makeGraphQLRequest(query, null);
+  },
+
+  analysisChat(variables: AnalysisChatPayload): Promise<string> {
+    const query = `query AnalysisChat($snippet: String!) {
+      analysisChat(snippet: $snippet)
+    }`;
+    return makeGraphQLRequest(query, variables);
   }
 };
 

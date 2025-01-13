@@ -76,3 +76,8 @@ interface AddEventAtAgePayload {
     sessionId: string;
     maxAge: number;
   }
+
+
+  interface AnalysisChatPayload {
+    snippet: string;
+  }
