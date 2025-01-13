@@ -5,6 +5,7 @@ import gameData from '../data/GameData.json';
 import { GameSession } from '../types/gameTypes';
 import { api } from '../services/api';
 import { capitalizeFirstLetter } from '../utils/GameUtils';
+import { useToast } from '../context/ToastContext';
 
 interface RollHistoryEntry {
   type: 'roll';
@@ -48,7 +49,7 @@ export function GameHistory({ climb, history, currentStep, gameOver, onNewRoll, 
         narrative: savedSession.narrative || ''
       };
   });
-
+  const { showToast } = useToast();
   const deployHack = (hack: number) => {
     if(hack == 2) {
       console.log(diceValue, gameSession)
@@ -98,6 +99,7 @@ export function GameHistory({ climb, history, currentStep, gameOver, onNewRoll, 
           });
         } catch(error) {
           console.error('Failed to add event:', error);
+          showToast('Failed to add event', 'error');
         }
         localStorage.setItem('gameSession', JSON.stringify(updatedSession));
         return updatedSession;
@@ -259,4 +261,3 @@ export function GameHistory({ climb, history, currentStep, gameOver, onNewRoll, 
 }
 
 export default GameHistory;
-

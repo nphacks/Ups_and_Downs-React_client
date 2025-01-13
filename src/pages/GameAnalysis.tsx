@@ -5,6 +5,7 @@ import './GameAnalysis.css';
 import { api } from '../services/api';
 import { cleanString, removeQuotes } from '../utils/GameUtils';
 import { TransitionGroup, CSSTransition } from 'react-transition-group';
+import { useToast } from '../context/ToastContext';
 
 export interface GameSessions {
   allGameSessionNodes: {
@@ -66,7 +67,7 @@ const ChatMessage = ({ message }: { message: ChatMessage }) => (
 
 function GameAnalysis() {
   const navigate = useNavigate();
-
+  const { showToast } = useToast();
   const [gameSessions, setGameSessions] = useState<GameSessions['allGameSessionNodes']>([]);
   const [selectedSession, setSelectedSession] = useState<string | null>(null);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
@@ -80,8 +81,13 @@ function GameAnalysis() {
   }, []);
 
   const fetchSessions = async () => {
-    const sessions: GameSessions = await api.allGameSessions();
-    setGameSessions(sessions.allGameSessionNodes);
+    try {
+      const sessions: GameSessions = await api.allGameSessions();
+      setGameSessions(sessions.allGameSessionNodes);
+    } catch {
+      showToast('Error fetching game sessions', 'error');
+    }
+    
 }
 
   const navigateToHome = () => {
@@ -176,7 +182,7 @@ function GameAnalysis() {
       }));
   
     } catch (error) {
-      
+      showToast('Error sending message', 'error');
       const errorMessage: ChatMessage = {
         gamesession_id: Date.now().toString(),
         text: "Sorry, I couldn't process your message. Please try again.",

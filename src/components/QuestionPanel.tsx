@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import './QuestionPanel.css';
 import { capitalizeFirstLetter } from '../utils/GameUtils';
 import { api } from '../services/api';
-
+import { useToast } from '../context/ToastContext';
+import Loading from './Loading';
 
 interface QuestionPanelProps {
   currentStep: number;
@@ -23,11 +24,14 @@ export function QuestionPanel({
 }: QuestionPanelProps) {
   
   const [currentQuestion, setCurrentQuestion] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const hasSetQuestion = useRef(false);
+  const { showToast } = useToast();
 
   const handleAnswer = async (answer: string, fullAnswerObj: any) => {
     // Check if this is a snake/ladder question
     if (className?.includes('snake-ladder')) {
+      setIsLoading(true);
       try {
         const narrative = fullAnswerObj[currentQuestion.answerType];
         const decision = await api.determineGoodOrBadDecision({snippet: narrative});
@@ -39,6 +43,9 @@ export function QuestionPanel({
         });
       } catch (error) {
         console.error('Error processing snake/ladder answer:', error);
+        showToast('Error processing snake/ladder answer', 'error');
+      } finally {
+        setIsLoading(false);
       }
     } else {
       // For regular questions, just pass the answer through
@@ -77,23 +84,24 @@ export function QuestionPanel({
 
   return (
     <div className={`question-panel ${className}`.trim()}>
-    <div className="question-panel">
-      <h3>{currentQuestion.question}</h3>
-      <div className="options">
-        {currentQuestion.answer.map((option: any, index: number) => (
-          <button
-            key={index}
-            onClick={() => handleAnswer(
-              option[currentQuestion.answerType], 
-              option
-            )}
-            className="option-button"
-          >
-            {capitalizeFirstLetter(option[currentQuestion.answerType])}
-          </button>
-        ))}
+      {isLoading && <Loading />}
+      <div className="question-panel">
+        <h3>{currentQuestion.question}</h3>
+        <div className="options">
+          {currentQuestion.answer.map((option: any, index: number) => (
+            <button
+              key={index}
+              onClick={() => handleAnswer(
+                option[currentQuestion.answerType], 
+                option
+              )}
+              className="option-button"
+            >
+              {capitalizeFirstLetter(option[currentQuestion.answerType])}
+            </button>
+          ))}
+        </div>
       </div>
-    </div>
   </div>
   );
 }

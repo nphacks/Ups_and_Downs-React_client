@@ -126,3 +126,166 @@
   height: 70vh;
   padding: 20px;
 }
+
+.instructions-button {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  padding: 12px 24px;
+  /* background-color: #2196F3; */
+  color: white;
+  border: none;
+  border-radius: 25px;
+  cursor: pointer;
+  z-index: 1000;
+  font-weight: 600;
+  font-size: 15px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.instructions-button:hover {
+  background-color: #1976D2;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 8px rgba(0, 0, 0, 0.2);
+}
+
+.instructions-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1001;
+  backdrop-filter: blur(3px);
+  animation: fadeIn 0.3s ease;
+}
+
+.instructions-panel {
+  background-color: #ffffff;
+  padding: 30px;
+  border-radius: 15px;
+  max-width: 450px;
+  position: relative;
+  /* box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2); */
+  animation: slideIn 0.3s ease;
+}
+
+.close-button {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: #f0f0f0;
+  border: none;
+  border-radius: 50%;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 5px 12px;
+  color: #555;
+  transition: all 0.2s ease;
+}
+
+.close-button:hover {
+  background: #e0e0e0;
+  color: #333;
+  transform: rotate(90deg);
+}
+
+.instructions-panel h2 {
+  margin-top: 0;
+  color: #1976D2;
+  font-size: 24px;
+  margin-bottom: 20px;
+  font-weight: 600;
+  border-bottom: 2px solid #e0e0e0;
+  padding-bottom: 10px;
+}
+
+.instructions-panel ul {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+}
+
+.instructions-panel li {
+  margin: 15px 0;
+  color: #424242;
+  font-size: 16px;
+  padding-left: 25px;
+  position: relative;
+  line-height: 1.5;
+}
+
+.instructions-panel li::before {
+  content: "•";
+  color: #2196F3;
+  font-size: 20px;
+  position: absolute;
+  left: 0;
+  top: -2px;
+}
+
+/* Styling for nested lists */
+.instructions-panel li ul {
+  margin-top: 10px;
+  margin-left: 5px;
+}
+
+.instructions-panel li ul li {
+  margin: 8px 0;
+  font-size: 14px;
+  padding-left: 20px;
+}
+
+.instructions-panel li ul li::before {
+  content: "◦";
+  color: #64B5F6;
+  font-size: 16px;
+  left: 0;
+  top: -1px;
+}
+
+/* Special styling for specific steps */
+.instructions-panel li ul li:nth-child(1)::after {
+  content: " 🟢";
+  font-size: 12px;
+}
+
+.instructions-panel li ul li:nth-child(2)::after {
+  content: " ⭐";
+  font-size: 12px;
+}
+
+/* Add emphasis to important points */
+.instructions-panel li:first-child {
+  font-weight: 500;
+}
+
+.instructions-panel li:last-child {
+  font-weight: 500;
+}
+
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}

@@ -7,7 +7,8 @@ import gameData from '../data/GameData.json';
 import { GameSession } from '../types/gameTypes';
 import { api } from '../services/api';
 import { useNavigate } from 'react-router-dom';
-import loadingVideo from '../assets/loading.mp4';
+import { useToast } from '../context/ToastContext';
+import Loading from '../assets/loading.mp4';
 
 interface GamePlayProps {
   climb: () => void;
@@ -52,6 +53,7 @@ function GamePlay({ climb, fall, currentStep, snakeLadderPositions }: GamePlayPr
   const [showHistory, setShowHistory] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const { showToast } = useToast();
 
   useEffect(() => {
     if (rollHistory.length === 0) {
@@ -265,6 +267,7 @@ function GamePlay({ climb, fall, currentStep, snakeLadderPositions }: GamePlayPr
       });
     } catch (error) {
         console.error('Error updating step answer:', error);
+        showToast('Error updating step answer', 'error');
         // Handle error appropriately
     }
   };
@@ -404,7 +407,7 @@ function GamePlay({ climb, fall, currentStep, snakeLadderPositions }: GamePlayPr
         sessionId: gameSession.sessionId,
         maxAge: 100
       });
-      
+      localStorage.clear()
       // Navigate to analyze page with the response data
       navigate('/analysis', { state: { analysisData: response } });
     } catch (error) {
@@ -415,27 +418,12 @@ function GamePlay({ climb, fall, currentStep, snakeLadderPositions }: GamePlayPr
     }
   }
 
-  const LoadingOverlay = () => (
-    <div className="loading-overlay">
-      <video
-        autoPlay
-        loop
-        muted
-        className="loading-video"
-      >
-        <source src={loadingVideo} type="video/mp4" />
-        Your browser does not support the video tag.
-      </video>
-    </div>
-  );
-
   const handleNewGame = async () => {
     navigate('/');
   }
 
   return (
     <>
-      {isLoading && <LoadingOverlay />}
       <div className="game-container">
         <div>
           <GameHistory 
@@ -452,6 +440,7 @@ function GamePlay({ climb, fall, currentStep, snakeLadderPositions }: GamePlayPr
               <div className="game-over-modal">
                 <h2>Woohoo! Congratulations!</h2>
                 <p>You lived a long life till 100!</p>
+                {isLoading && <Loading />}
                 <div className="game-over-buttons">
                   <button onClick={handleAnalyzeGame}>Analyze my life lived</button>
                   <button onClick={handleNewGame}>Live a new Life</button>

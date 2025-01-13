@@ -10,9 +10,34 @@ import './Game.css';
 import '../styles/error.css';
 import { generateSnakeLadderPositions } from '../utils/GameUtils';
 
+const Instructions = ({ onClose }: { onClose: () => void }) => {
+  return (
+    <div className="instructions-overlay">
+      <div className="instructions-panel">
+        <button className="close-button" style={{color: 'black'}} onClick={onClose}>×</button>
+        <h2>How to Play</h2>
+        <ul>
+          <li>Roll a die to move forward on your life journey.</li>
+          <li>Track your life events in the History Panel on the left.</li>
+          <li>Each step represents a moment in your life journey.</li>
+          <li>Face life decisions at each step:
+            <ul>
+              <li>Regular life decisions on Green Steps</li>
+              <li>Major life-changing decisions on Golden Steps</li>
+            </ul>
+          </li>
+          <li>Complete your journey by reaching step 100!</li>
+          <li>Reflect on your life choices in the final analysis.</li>
+        </ul>
+      </div>
+    </div>
+  );
+};
+
 function Game() {  
   const navigate = useNavigate();
 
+  const [showInstructions, setShowInstructions] = useState(false);
   const [snakeLadderPositions] = useState<Set<number>>(() => {
     const positions = generateSnakeLadderPositions();
     localStorage.setItem('snakeLadderPositions', JSON.stringify([...positions]));
@@ -105,6 +130,15 @@ function Game() {
     }
     return (
       <div className="game-page" style={{ position: 'relative', minHeight: '100vh' }}>
+         <button 
+            className="instructions-button"
+            onClick={() => setShowInstructions(true)}
+          >
+            How to Play
+          </button>
+          {showInstructions && (
+            <Instructions onClose={() => setShowInstructions(false)} />
+          )}
         <div className="game-renderer-container">
           <GameRenderer
             onError={setError}
