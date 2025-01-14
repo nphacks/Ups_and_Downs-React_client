@@ -8,7 +8,7 @@ import { GameSession } from '../types/gameTypes';
 import { api } from '../services/api';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../context/ToastContext';
-import Loading from '../assets/loading.mp4';
+import Loading from '../components/Loading';
 
 interface GamePlayProps {
   climb: () => void;
